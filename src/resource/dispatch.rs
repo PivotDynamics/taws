@@ -639,6 +639,24 @@ async fn invoke_describe(
             }
         }
     }
+    // ELBv2 load balancers: enrich describe output with tags
+    if resource_key == "elbv2-load-balancers" {
+        if let Some(arn) = result.get("LoadBalancerArn").and_then(|v| v.as_str())
+        {
+            let tag_xml = clients.http.query_request(
+                              "elbv2",
+                              "DescribeTags",
+                              &[("ResourceArns.member.1", arn)],
+                          ).await?;
+
+            let tag_json = xml_to_json(&tag_xml)?;
+
+            if let Some(tags) = tag_json.pointer("/DescribeTagsResponse/DescribeTagsResult/TagDescriptions/member/Tags/member")
+            {
+                result["Tags"] = tags.clone();
+            }
+        }
+    }
 
     Ok(result)
 }

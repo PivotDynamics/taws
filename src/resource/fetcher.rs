@@ -11,6 +11,8 @@ use super::registry::get_resource;
 use crate::aws::client::AwsClients;
 use anyhow::{anyhow, Result};
 use serde_json::Value;
+use crate::aws::http::xml_to_json;
+
 
 /// Filter for fetching resources (used for sub-resource filtering)
 #[derive(Debug, Clone, Default)]
@@ -126,6 +128,63 @@ pub async fn fetch_resources_paginated(
         )
         .await?
     };
+
+    let mut response = response;
+  
+    if resource_key == "elbv2-load-balancers" && !filters.is_empty() {
+        let tag_filters: Vec<(&str, &Vec<String>)> = filters
+            .iter().filter_map(|filter| {
+                filter.name.strip_prefix("tag:").map(|tag_key| (tag_key, &filter.values))
+            }).collect();
+ 
+        if !tag_filters.is_empty() {
+            let mut filtered_load_balancers = Vec::new();
+            if let Some(load_balancers) = response.get("load_balancers").and_then(|v| v.as_array())
+            {
+                for load_balancer in load_balancers {
+                    let Some(arn) = load_balancer.get("LoadBalancerArn").and_then(|v| v.as_str())
+                    else { continue; };
+                    let tag_xml = clients.http
+                        .query_request(
+                            "elbv2",
+                            "DescribeTags",
+                            &[("ResourceArns.member.1", arn)],
+                        ).await?;
+                    let tag_json = xml_to_json(&tag_xml)?;
+                    let tags = tag_json.pointer(
+                            "/DescribeTagsResponse/DescribeTagsResult/\
+                             TagDescriptions/member/Tags/member",
+                        );
+
+                    // A load balancer matches only if ALL requested tag filters match.
+                    let matches = tag_filters.iter().all(|(filter_key, filter_values)| {
+                        let tag_items: Vec<&Value> = match tags {
+                           Some(Value::Array(items)) => items.iter().collect(),
+                           Some(item @ Value::Object(_)) => vec![item],
+                           _ => vec![],
+                        };
+
+                        tag_items.iter().any(|tag| {
+                            let key_matches = tag.get("Key").and_then(|v| v.as_str()).map(|key| key == *filter_key).unwrap_or(false);
+                            let value_matches = tag.get("Value").and_then(|v| v.as_str()).map(|value| {
+                                    filter_values.iter().any(|filter_value| value == filter_value)
+                            }).unwrap_or(false);
+                            key_matches && value_matches
+                        })
+                    });
+                    if matches {
+                        filtered_load_balancers.push(load_balancer.clone());
+                    }
+                }
+            }
+            // Replace the original unfiltered load balancer list.
+            if let Some(response_object) = response.as_object_mut() {
+                response_object.insert(
+                    "load_balancers".to_string(),
+                    Value::Array(filtered_load_balancers),);
+            }
+        }
+    }
 
     // 4. Extract items using response_path
     let mut items = extract_items(&response, &resource_def.response_path)?;

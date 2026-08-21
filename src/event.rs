@@ -162,7 +162,8 @@ async fn handle_normal_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
         KeyCode::Enter => app.enter_describe_mode().await,
 
         // Filter toggle - clears any existing tag filter and starts fresh
-        KeyCode::Char('/') => {
+        KeyCode::Char('7') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+
             if app.start_new_filter() {
                 // Tag filter was cleared, need to refresh to remove server-side filter
                 app.refresh_current().await?;
@@ -337,6 +338,27 @@ async fn handle_filter_input(app: &mut App, key: KeyEvent) -> Result<bool> {
             app.clear_filter();
         }
         KeyCode::Enter => {
+        /*    use std::fs::OpenOptions;
+            use std::io::Write;
+            {
+                  let mut f = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/taws.debug")
+            .unwrap();
+
+        writeln!(f, "\n========== FILTER ENTER ==========").unwrap();
+        writeln!(f, "FILTER TEXT: {:?}", app.filter_text).unwrap();
+
+        let parsed = crate::app::AwsFilters::parse(&app.filter_text);
+        writeln!(f, "PARSED: {:#?}", parsed).unwrap();
+        writeln!(
+            f,
+            "SUPPORTS FILTERS: {}",
+            app.current_resource_supports_filters()
+        )
+        .unwrap();
+    }*/
             // Check if this is an AWS filter that should trigger server-side filtering
             if let Some(filters) = crate::app::AwsFilters::parse(&app.filter_text) {
                 if app.current_resource_supports_filters() {
@@ -366,7 +388,7 @@ async fn handle_filter_input(app: &mut App, key: KeyEvent) -> Result<bool> {
             app.filters_autocomplete_shown = app.should_show_filters_autocomplete();
             app.apply_filter();
         }
-        KeyCode::Char('/') => {
+        KeyCode::Char('7') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             // Pressing '/' again clears and restarts the filter (including AWS filters)
             if app.start_new_filter() {
                 // AWS filters were cleared, need to refresh to remove server-side filter
@@ -462,7 +484,7 @@ fn handle_describe_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
             app.exit_mode();
         }
         // Start search with '/'
-        KeyCode::Char('/') => {
+        KeyCode::Char('7') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             app.describe_search_active = true;
         }
         // Next match with 'n'

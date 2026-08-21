@@ -9,6 +9,10 @@
       "id_field": "LoadBalancerArn",
       "name_field": "LoadBalancerName",
       "is_global": false,
+      "filters_config": {
+        "enabled": true,
+        "hint": "tag:elbv2.k8s.aws/cluster=value"
+      },
       "columns": [
         { "header": "NAME", "json_path": "LoadBalancerName", "width": 30 },
         { "header": "TYPE", "json_path": "Type", "width": 12 },
