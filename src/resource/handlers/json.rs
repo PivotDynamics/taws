@@ -10,6 +10,7 @@ use crate::resource::path_extractor::{extract_by_path, extract_list};
 use crate::resource::protocol::ApiConfig;
 use anyhow::Result;
 use serde_json::Value;
+use tracing::debug;
 
 pub struct JsonProtocolHandler;
 
@@ -21,7 +22,15 @@ impl JsonProtocolHandler {
         service: &str,
         config: &ApiConfig,
         params: &Value,
+        region: Option<&str>,
     ) -> Result<String> {
+ debug!(
+        "JSON execute_impl: service={}, requested_region={:?}, clients.region={}",
+        service,
+        region,
+        clients.region
+    );
+
         let action = config
             .action
             .as_ref()
@@ -60,7 +69,27 @@ impl JsonProtocolHandler {
         }
 
         let body_str = serde_json::to_string(&Value::Object(body))?;
-        clients.http.json_request(service, action, &body_str).await
+        //clients.http.json_request(service, action, &body_str).await
+        match region {
+    Some(request_region) => {
+        clients
+            .http
+            .json_request_with_region(
+                service,
+                action,
+                &body_str,
+                request_region,
+            )
+            .await
+    }
+    None => {
+        clients
+            .http
+            .json_request(service, action, &body_str)
+            .await
+    }
+}
+        
     }
 }
 

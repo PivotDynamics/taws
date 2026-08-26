@@ -156,10 +156,72 @@ fn render_filter_bar(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
+fn render_metric_table(
+    f: &mut Frame,
+    app: &App,
+    area: Rect,
+    metric: &'static crate::resource::MetricDef,
+) {
+    let query = app.filter_text.trim();
+    let highlight_filter_matches = !query.is_empty();
+
+    let title = format!(
+        " {} — {} ",
+        metric.display_name,
+        app.filtered_items.len()
+    );
+
+    let header_cells = metric.columns.iter().map(|column| {
+        Cell::from(column.header.clone())
+    });
+
+    let header = Row::new(header_cells).style(
+        Style::default()
+            .add_modifier(Modifier::BOLD),
+    );
+
+    let rows = app.filtered_items.iter().map(|item| {
+        let cells = metric.columns.iter().map(|column| {
+            let value = extract_json_value(item, &column.json_path);
+            let cell = Cell::from(value);
+
+            if highlight_filter_matches {
+                // highlighting that we can reuse later if needed.
+            }
+
+            cell
+        });
+
+        Row::new(cells)
+    });
+
+    let widths = metric
+        .columns
+        .iter()
+        .map(|_| Constraint::Min(10))
+        .collect::<Vec<_>>();
+
+    let table = Table::new(rows, widths)
+        .header(header)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(title),
+        );
+
+    f.render_widget(table, area);
+}
+
 /// Render dynamic table based on current resource definition
 fn render_dynamic_table(f: &mut Frame, app: &App, area: Rect) {
     let Some(resource) = app.current_resource() else {
-        let msg = Paragraph::new("Unknown resource").style(Style::default().fg(Color::Red));
+        if let Some(metric) = app.current_metric() {
+            render_metric_table(f, app, area, metric);
+            return;
+        }
+
+        let msg = Paragraph::new("Unknown resource or metric")
+            .style(Style::default().fg(Color::Red));
         f.render_widget(msg, area);
         return;
     };

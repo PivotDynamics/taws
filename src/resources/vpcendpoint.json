@@ -1,0 +1,159 @@
+{
+  "resources": {
+    "ec2-vpc-endpoints": {
+      "display_name": "VPC Endpoints",
+      "service": "ec2",
+      "sdk_method": "describe_vpc_endpoints",
+      "sdk_method_params": {},
+      "response_path": "vpc_endpoints",
+      "id_field": "VpcEndpointId",
+      "name_field": "ServiceName",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Tags.Name",
+          "width": 42
+        },
+        {
+          "header": "VPC ENDPOINT ID",
+          "json_path": "VpcEndpointId",
+          "width": 24
+        },
+        {
+          "header": "TYPE",
+          "json_path": "VpcEndpointType",
+          "width": 14
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "VPC ID",
+          "json_path": "VpcId",
+          "width": 24
+        },
+        {
+          "header": "SERVICE",
+          "json_path": "ServiceName",
+          "width": 45
+        }
+      ],
+
+      "sub_resources": [
+        { 
+          "shortcut": "s", 
+          "display_name": "Subnets", 
+          "resource_key": "subnets", 
+          "parent_id_field": "SubnetIds",
+          "filter_param": "subnet-id",
+          "filter_type": "ec2_filter" 
+        },
+        { 
+          "shortcut": "g", 
+          "display_name": "Security Groups", 
+          "resource_key": "security-groups", 
+          "parent_id_field": "Groups",
+          "parent_id_path": "groupId",
+          "filter_param": "group-id",
+          "filter_type": "ec2_filter" 
+        },
+
+      {
+        "shortcut": "e",
+        "display_name": "Network Interfaces",
+        "resource_key": "network-interfaces",
+        "parent_id_field": "NetworkInterfaceIds",
+        "filter_param": "network-interface-id",
+        "filter_type": "ec2_filter"
+      },
+      {
+        "shortcut": "m",
+        "display_name": "Monitoring",
+        "resource_key": "vpc-endpoint-active-connections",
+        "parent_id_field": "VpcEndpointId",
+        "metric_params": {
+          "VpcId": "VpcId",
+          "VpcEndpointId": "VpcEndpointId",
+          "VpcEndpointType": "VpcEndpointType",
+          "ServiceName": "ServiceName"
+        }
+      }],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeVpcEndpoints",
+        "response_root": "/DescribeVpcEndpointsResponse/vpcEndpointSet/item",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/DescribeVpcEndpointsResponse/nextToken",
+          "max_results_param": "MaxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "NetworkInterfaceIds": {
+          "source": "/networkInterfaceIdSet/item"
+        },
+        "SubnetIds": {
+          "source": "/subnetIdSet/item"
+        },
+        "VpcEndpointId": {
+          "source": "/vpcEndpointId",
+          "default": "-"
+        },
+        "VpcEndpointType": {
+          "source": "/vpcEndpointType",
+          "default": "-"
+        },
+        "VpcId": {
+          "source": "/vpcId",
+          "default": "-"
+        },
+        "ServiceName": {
+          "source": "/serviceName",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "CreationTimestamp": {
+          "source": "/creationTimestamp",
+          "default": "-"
+        },
+        "PolicyDocument": {
+          "source": "/policyDocument",
+          "default": "-"
+        },
+        "Groups": {
+          "source": "/groupSet/item"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "action_configs": {},
+
+      "describe_config": {
+        "protocol": "query",
+        "action": "DescribeVpcEndpoints",
+        "id_param": "VpcEndpointId.1",
+        "response_path": "/DescribeVpcEndpointsResponse/vpcEndpointSet/item"
+      },
+
+      "filters_config": {
+        "enabled": true,
+        "hint": "vpc-id=vpc-xxx, service-name=com.amazonaws..., vpc-endpoint-type=Interface|Gateway, state=available|pending"
+      }
+    }
+  }
+}

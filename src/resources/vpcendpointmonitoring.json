@@ -1,0 +1,62 @@
+{
+  "metrics": {
+    "vpc-endpoint-active-connections": {
+      "display_name": "Active Connections",
+      "service": "monitoring",
+      "sdk_method": "get_metric_statistics",
+
+      "static_params": {
+        "Namespace": "AWS/PrivateLinkEndpoints",
+        "MetricName": "ActiveConnections",
+        "Period": "300",
+        "Statistics.member.1": "Average",
+        "Statistics.member.2": "Maximum",
+        "Statistics.member.3": "Minimum"
+      },
+
+      "dimensions": {
+        "Dimensions.member.1.Name": "VPC Id",
+        "Dimensions.member.1.Value": "$VpcId",
+
+        "Dimensions.member.2.Name": "VPC Endpoint Id",
+        "Dimensions.member.2.Value": "$VpcEndpointId",
+
+        "Dimensions.member.3.Name": "Endpoint Type",
+        "Dimensions.member.3.Value": "$VpcEndpointType",
+
+        "Dimensions.member.4.Name": "Service Name",
+        "Dimensions.member.4.Value": "$ServiceName"
+      },
+
+      "response_root": "/GetMetricStatisticsResponse/GetMetricStatisticsResult/Datapoints/member",
+
+      "columns": [
+        {
+          "header": "TIMESTAMP",
+          "json_path": "Timestamp",
+          "width": 32
+        },
+        {
+          "header": "VALUE",
+          "json_path": "Average",
+          "width": 15
+        },
+        {
+          "header": "MAX",
+          "json_path": "Maximum",
+          "width": 15
+        },
+        {
+          "header": "MIN",
+          "json_path": "Minimum",
+          "width": 15
+        },
+        {
+          "header": "UNIT",
+          "json_path": "Unit",
+          "width": 12
+        }
+      ]
+    }
+  }
+}

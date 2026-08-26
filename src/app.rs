@@ -3,12 +3,14 @@ use crate::aws::client::AwsClients;
 use crate::config::Config;
 use crate::resource::{
     extract_json_value, fetch_resources_paginated, get_all_resource_keys, get_resource,
-    ResourceDef, ResourceFilter,
+    ResourceDef, ResourceFilter,extract_json_values,MetricDef
 };
 use anyhow::Result;
 use crossterm::event::KeyCode;
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use serde_json::Value;
+use crate::resource::get_metric;
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mode {
@@ -420,6 +422,10 @@ impl App {
     pub fn current_resource(&self) -> Option<&'static ResourceDef> {
         get_resource(&self.current_resource_key)
     }
+    /// Get current metric definition
+    pub fn current_metric(&self) -> Option<&'static MetricDef> {
+        get_metric(&self.current_resource_key)
+    }
 
     /// Get available commands for autocomplete
     pub fn get_available_commands(&self) -> Vec<String> {
@@ -443,13 +449,23 @@ impl App {
     /// Fetch data for current resource (first page or current page based on pagination state)
     pub async fn refresh_current(&mut self) -> Result<()> {
         // Fetch the current page (uses pagination.next_token if set by next_page/prev_page)
+        tracing::debug!(
+            "refresh_current ENTER: key='{}', is_resource={}, is_metric={}, parent={:?}",
+            self.current_resource_key,
+            get_resource(&self.current_resource_key).is_some(),
+            get_metric(&self.current_resource_key).is_some(),
+            self.parent_context.as_ref().map(|p| &p.resource_key),
+        ); 
         self.fetch_page(self.pagination.next_token.clone()).await
     }
 
     /// Fetch a specific page of resources
     async fn fetch_page(&mut self, page_token: Option<String>) -> Result<()> {
-        if self.current_resource().is_none() {
-            self.error_message = Some(format!("Unknown resource: {}", self.current_resource_key));
+        if self.current_resource().is_none() && self.current_metric().is_none() {
+            self.error_message = Some(format!(
+                "Unknown resource or metric: {}",
+                self.current_resource_key
+            ));
             return Ok(());
         }
 
@@ -566,9 +582,19 @@ impl App {
             return filters;
         };
 
-        let Some(_resource) = self.current_resource() else {
+        let is_metric = get_metric(&self.current_resource_key).is_some();
+
+        if self.current_resource().is_none() && !is_metric {
             return filters;
-        };
+        }
+
+        tracing::debug!(
+            "BUILD FILTERS: current='{}', parent='{}', is_resource={}, is_metric={}",
+            self.current_resource_key,
+            parent.resource_key,
+            self.current_resource().is_some(),
+            is_metric,
+        );
 
         // For S3 objects, we need to collect filters from entire navigation stack
         // to preserve bucket_names while adding prefix
@@ -630,25 +656,130 @@ impl App {
 
             return filters;
         }
-
         // Default behavior for other resources
         if let Some(parent_resource) = get_resource(&parent.resource_key) {
             for sub in &parent_resource.sub_resources {
-                if sub.resource_key == self.current_resource_key {
-                    // Extract parent ID value
-                    let parent_id = extract_json_value(&parent.item, &sub.parent_id_field);
-                    if parent_id != "-" {
-                        return vec![ResourceFilter::with_type(
-                            &sub.filter_param,
-                            vec![parent_id],
-                            &sub.filter_type,
-                        )];
-                    }
+                if sub.resource_key != self.current_resource_key {
+                    continue;
                 }
+    
+                tracing::debug!(
+                    "SUBRESOURCE FILTER MATCH: parent={} child={} parent_id_field={} filter_param={} filter_type={}",
+                    parent.resource_key,
+                    self.current_resource_key,
+                    sub.parent_id_field,
+                    sub.filter_param,
+                    sub.filter_type
+                );
+        
+            tracing::debug!(
+                    "SUBRESOURCE PARENT ITEM: {:?}",
+                    parent.item
+                );
+        
+                // Metrics need multiple parameters extracted from the
+                // parent resource instead of the normal single parent_id_field.
+                if !sub.metric_params.is_empty() {
+                    tracing::debug!(
+                        "METRIC SUBRESOURCE: parent={} child={} metric_params={:?}",
+                        parent.resource_key,
+                        self.current_resource_key,
+                        sub.metric_params
+                    );
+        
+                    let mut metric_filters = Vec::new();
+        
+                    for (param_name, parent_field) in &sub.metric_params {
+                        let value = extract_json_value(&parent.item, parent_field);
+        
+                        tracing::debug!(
+                            "METRIC PARAM: {} <- {} = {:?}",
+                            param_name,
+                            parent_field,
+                            value
+                        );
+        
+                        if value != "-" {
+                            metric_filters.push(ResourceFilter::with_type(
+                                param_name,
+                                vec![value],
+                                "scalar",
+                            ));
+                        }
+                    }
+        
+                    tracing::debug!(
+                        "CREATED METRIC FILTERS: {:?}",
+                        metric_filters
+                    );
+        
+                    return metric_filters;
+                }
+        
+                // Normal sub-resource handling.
+                let parent_ids = if let Some(path) = &sub.parent_id_path {
+                    tracing::debug!(
+                        "Using parent_id_path={:?}",
+                        path
+                    );
+        
+                    extract_json_values(
+                        &parent.item,
+                        &sub.parent_id_field,
+                        Some(path),
+                    )
+                } else {
+                    tracing::debug!(
+                        "Using direct parent_id_field={}",
+                        sub.parent_id_field
+                    );
+        
+                    extract_json_values(
+                        &parent.item,
+                        &sub.parent_id_field,
+                        None,
+                    )
+                };
+    
+                tracing::debug!(
+                    "EXTRACTED PARENT IDS: {:?}",
+                    parent_ids
+                );
+        
+                // Some AWS resources don't have the relationship field.
+                // Example: Gateway VPC endpoints don't have SubnetIds.
+                if parent_ids.is_empty() {
+                    tracing::debug!(
+                        "NO PARENT IDS EXTRACTED - parent has no {} values; returning __NO_MATCH__ filter",
+                        sub.parent_id_field
+                    );
+        
+                    return vec![
+                        ResourceFilter::with_type(
+                            &sub.filter_param,
+                            vec!["__NO_MATCH__".to_string()],
+                            &sub.filter_type,
+                        )
+                    ];
+                }
+        
+                let filter = ResourceFilter::with_type(
+                    &sub.filter_param,
+                    parent_ids,
+                    &sub.filter_type,
+                );
+        
+                tracing::debug!(
+                    "CREATED SUBRESOURCE FILTER: name={} values={:?} type={}",
+                    filter.name,
+                    filter.values,
+                    filter.filter_type
+                );
+
+                return vec![filter];
             }
         }
-
-        Vec::new()
+        filters
     }
 
     // =========================================================================
@@ -1268,8 +1399,8 @@ impl App {
 
     /// Navigate to a resource (top-level)
     pub async fn navigate_to_resource(&mut self, resource_key: &str) -> Result<()> {
-        if get_resource(resource_key).is_none() {
-            self.error_message = Some(format!("Unknown resource: {}", resource_key));
+        if get_resource(resource_key).is_none() && get_metric(resource_key).is_none() {
+            self.error_message = Some(format!("Unknown resource or metric: {}", resource_key));
             return Ok(());
         }
 
@@ -1291,6 +1422,15 @@ impl App {
 
     /// Navigate to sub-resource with parent context
     pub async fn navigate_to_sub_resource(&mut self, sub_resource_key: &str) -> Result<()> {
+        tracing::debug!(
+            "navigate_to_sub_resource: parent='{}', child='{}', is_resource={}, is_metric={}",
+            self.current_resource_key,
+            sub_resource_key,
+            get_resource(sub_resource_key).is_some(),
+            get_metric(sub_resource_key).is_some(),
+        );
+
+
         let Some(selected_item) = self.selected_item().cloned() else {
             return Ok(());
         };
@@ -1299,7 +1439,6 @@ impl App {
             return Ok(());
         };
 
-        // Verify this is a valid sub-resource
         let is_valid = current_resource
             .sub_resources
             .iter()
@@ -1341,6 +1480,12 @@ impl App {
             self.navigation_stack.push(ctx);
         }
 
+        tracing::debug!(
+            "SUBRESOURCE NAVIGATION: parent_resource={}, sub_resource={}, selected_item={:#?}",
+            self.current_resource_key,
+            sub_resource_key,
+            selected_item
+        );
         // Set new parent context
         self.parent_context = Some(ParentContext {
             resource_key: self.current_resource_key.clone(),
@@ -1584,6 +1729,8 @@ impl App {
                                     target_resource.display_name
                                 ));
                             }
+                        } else if get_metric(cmd).is_some() {
+                            self.navigate_to_resource(cmd).await?;
                         } else {
                             self.error_message = Some(format!(
                                 "'{}' requires a parent resource. Navigate to the parent first and select an item.",

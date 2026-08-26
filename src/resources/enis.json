@@ -1,0 +1,140 @@
+{
+  "resources": {
+    "network-interfaces": {
+      "display_name": "Network Interfaces",
+      "service": "ec2",
+      "sdk_method": "describe_network_interfaces",
+      "sdk_method_params": {},
+      "response_path": "network_interfaces",
+      "id_field": "NetworkInterfaceId",
+      "name_field": "NetworkInterfaceId",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "ENI ID",
+          "json_path": "NetworkInterfaceId",
+          "width": 24
+        },
+        {
+          "header": "STATUS",
+          "json_path": "Status",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "TYPE",
+          "json_path": "InterfaceType",
+          "width": 20
+        },
+        {
+          "header": "PRIVATE IP",
+          "json_path": "PrivateIpAddress",
+          "width": 18
+        },
+        {
+          "header": "SUBNET ID",
+          "json_path": "SubnetId",
+          "width": 24
+        },
+        {
+          "header": "VPC ID",
+          "json_path": "VpcId",
+          "width": 24
+        },
+        {
+          "header": "AZ",
+          "json_path": "AvailabilityZone",
+          "width": 18
+        },
+        {
+          "header": "DESCRIPTION",
+          "json_path": "Description",
+          "width": 40
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeNetworkInterfaces",
+        "response_root": "/DescribeNetworkInterfacesResponse/networkInterfaceSet/item",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/DescribeNetworkInterfacesResponse/nextToken"
+        }
+      },
+
+      "field_mappings": {
+        "NetworkInterfaceId": {
+          "source": "/networkInterfaceId",
+          "default": "-"
+        },
+        "SubnetId": {
+          "source": "/subnetId",
+          "default": "-"
+        },
+        "VpcId": {
+          "source": "/vpcId",
+          "default": "-"
+        },
+        "Status": {
+          "source": "/status",
+          "default": "-"
+        },
+        "PrivateIpAddress": {
+          "source": "/privateIpAddress",
+          "default": "-"
+        },
+        "PrivateDnsName": {
+          "source": "/privateDnsName",
+          "default": "-"
+        },
+        "Description": {
+          "source": "/description",
+          "default": "-"
+        },
+        "Groups": {
+          "source": "/groupSet/item"
+        },
+        "AvailabilityZone": {
+          "source": "/availabilityZone",
+          "default": "-"
+        },
+        "InterfaceType": {
+          "source": "/interfaceType",
+          "default": "-"
+        },
+        "RequesterManaged": {
+          "source": "/requesterManaged",
+          "default": "-"
+        },
+        "RequesterId": {
+          "source": "/requesterId",
+          "default": "-"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "action_configs": {},
+
+      "describe_config": {
+        "protocol": "query",
+        "action": "DescribeNetworkInterfaces",
+        "id_param": "NetworkInterfaceId.1",
+        "response_path": "/DescribeNetworkInterfacesResponse/networkInterfaceSet/item"
+      },
+
+      "filters_config": {
+        "enabled": true,
+        "hint": "network-interface-id=eni-xxx, subnet-id=subnet-xxx, vpc-id=vpc-xxx, status=in-use|available"
+      }
+    }
+  }
+}
+

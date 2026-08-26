@@ -100,6 +100,9 @@ pub struct ApiConfig {
     /// For composite operations, the sequence of operations
     #[serde(default)]
     pub operations: Vec<CompositeOperation>,
+
+/*    #[serde(default)]
+    pub cross_region: bool,*/
 }
 
 /// A single operation in a composite API call

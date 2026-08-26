@@ -11,6 +11,7 @@ use crate::resource::path_extractor::extract_list;
 use crate::resource::protocol::ApiConfig;
 use anyhow::Result;
 use serde_json::Value;
+use tracing::debug;
 
 pub struct QueryProtocolHandler;
 
@@ -22,6 +23,7 @@ impl QueryProtocolHandler {
         service: &str,
         config: &ApiConfig,
         params: &Value,
+        region: Option<&str>,
     ) -> Result<String> {
         let action = config
             .action
@@ -165,11 +167,32 @@ impl QueryProtocolHandler {
             .iter()
             .map(|(k, v)| (k.as_str(), v.as_str()))
             .collect();
-
+debug!(
+    "Query handler: service={}, action={}, requested_region={:?}",
+    service,
+    action,
+    region
+);
+        match region {
+    Some(region) => {
+        clients
+            .http
+            .query_request_with_region(service, action, &params_refs, region)
+            .await
+    }
+    None => {
         clients
             .http
             .query_request(service, action, &params_refs)
             .await
+    }
+}
+
+        /*clients
+            .http
+            //.query_request(service, action, &params_refs)
+            .query_request_with_region(service, action, &params_refs, region)
+            .await*/
     }
 }
 
@@ -181,6 +204,12 @@ impl ProtocolHandler for QueryProtocolHandler {
     ) -> Result<(Vec<Value>, Option<String>)> {
         // Convert XML to JSON
         let json = xml_to_json(response)?;
+
+        // DEBUG: inspect the XML -> JSON representation
+        tracing::trace!(
+            "Query XML converted to JSON:\n{}",
+            serde_json::to_string_pretty(&json)?
+        );
 
         // Extract items using response_root path
         let items = if let Some(root) = &config.response_root {

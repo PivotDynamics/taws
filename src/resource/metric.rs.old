@@ -1,0 +1,25 @@
+use anyhow::{anyhow, Result};
+use serde_json::Value;
+
+pub(crate) fn resolve_metric_param(
+    template: &str,
+    params: &Value,
+) -> Result<String> {
+    if !template.starts_with('$') {
+        return Ok(template.to_string());
+    }
+
+    let key = &template[1..];
+
+    params
+        .get(key)
+        .and_then(Value::as_str)
+        .map(String::from)
+        .ok_or_else(|| {
+            anyhow!(
+                "Missing metric parameter '{}' required by template '{}'",
+                key,
+                template
+            )
+        })
+}

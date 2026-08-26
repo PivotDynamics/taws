@@ -50,16 +50,17 @@ impl UnifiedProtocolHandler {
         service: &str,
         config: &ApiConfig,
         params: &Value,
+        region: Option<&str>,
     ) -> Result<String> {
         match self.protocol {
             ApiProtocol::Query => {
                 QueryProtocolHandler
-                    .execute_impl(clients, service, config, params)
+                    .execute_impl(clients, service, config, params,region)
                     .await
             }
             ApiProtocol::Json => {
                 JsonProtocolHandler
-                    .execute_impl(clients, service, config, params)
+                    .execute_impl(clients, service, config, params,region)
                     .await
             }
             ApiProtocol::RestJson => {
@@ -97,9 +98,11 @@ impl UnifiedProtocolHandler {
         config: &ApiConfig,
         params: &Value,
         field_mappings: &HashMap<String, FieldMapping>,
+        region: Option<&str>,
     ) -> Result<ParsedResponse> {
         // Execute the API call
-        let response = self.execute(clients, service, config, params).await?;
+        //let response = self.execute(clients, service, config, params).await?;
+        let response = self.execute(clients, service, config, params, region).await?;
 
         // Parse items from response
         let (items, next_token) = self.parse_items(&response, config)?;

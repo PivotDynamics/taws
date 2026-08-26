@@ -58,6 +58,66 @@ pub fn apply_field_mappings(item: &Value, mappings: &HashMap<String, FieldMappin
     Value::Object(result)
 }
 
+fn transform_array_length(value: &Value) -> Value {
+    match value {
+        Value::Array(arr) => Value::String(arr.len().to_string()),
+        Value::Object(_) => Value::String("1".to_string()),
+        _ => Value::String("0".to_string()),
+    }
+}
+
+fn transform_first_item_field(value: &Value, transform: &str) -> Value {
+    let field = transform
+        .strip_prefix("first_item_field:")
+        .unwrap_or("");
+
+    if field.is_empty() {
+        return Value::String("-".to_string());
+    }
+
+    let item = match value {
+        Value::Array(arr) => arr.first(),
+        Value::Object(_) => Some(value),
+        _ => None,
+    };
+
+    item.and_then(|item| item.get(field))
+        .map(|v| match v {
+            Value::String(s) => Value::String(s.clone()),
+            Value::Number(n) => Value::String(n.to_string()),
+            Value::Bool(b) => {
+                Value::String(if *b { "Yes" } else { "No" }.to_string())
+            }
+            _ => Value::String("-".to_string()),
+        })
+        .unwrap_or_else(|| Value::String("-".to_string()))
+}
+
+fn transform_tunnel_status_summary(value: &Value) -> Value {
+    let tunnels: Vec<&Value> = match value {
+        Value::Array(arr) => arr.iter().collect(),
+        Value::Object(_) => vec![value],
+        _ => return Value::String("-".to_string()),
+    };
+
+    if tunnels.is_empty() {
+        return Value::String("0/0 UP".to_string());
+    }
+
+    let up = tunnels
+        .iter()
+        .filter(|tunnel| {
+            tunnel
+                .get("status")
+                .and_then(|v| v.as_str())
+                .map(|status| status.eq_ignore_ascii_case("UP"))
+                .unwrap_or(false)
+        })
+        .count();
+
+    Value::String(format!("{}/{} UP", up, tunnels.len()))
+}
+
 /// Apply a named transformation to a value
 fn apply_transform(value: &Value, transform: &str) -> Value {
     match transform {
@@ -70,6 +130,11 @@ fn apply_transform(value: &Value, transform: &str) -> Value {
         "private_zone_to_type" => transform_private_zone_to_type(value),
         "route53_record_value" => transform_route53_record_value(value),
         "route53_record_id" => transform_route53_record_id(value),
+        "array_length" => transform_array_length(value),
+        "tunnel_status_summary" => transform_tunnel_status_summary(value),
+        _ if transform.starts_with("first_item_field:") => {
+            transform_first_item_field(value, transform)
+        }
         _ => value.clone(),
     }
 }

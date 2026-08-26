@@ -45,6 +45,14 @@ const RESOURCE_FILES: &[&str] = &[
     include_str!("../resources/ssm.json"),
     include_str!("../resources/sts.json"),
     include_str!("../resources/vpc.json"),
+    include_str!("../resources/vpcendpoint.json"),
+    include_str!("../resources/enis.json"),
+    include_str!("../resources/vpcendpointmonitoring.json"),
+    include_str!("../resources/vpn.json"),
+    include_str!("../resources/vpc-tgw.json"),
+    include_str!("../resources/dx-gateways.json"),
+    include_str!("../resources/dx-connetions.json"),
+
 ];
 
 /// Color definition from JSON
@@ -71,11 +79,27 @@ pub struct SubResourceDef {
     pub display_name: String,
     pub shortcut: String,
     pub parent_id_field: String,
+
+    #[serde(default)]
     pub filter_param: String,
+
     /// Filter type: "scalar" (default) for single-value params (IAM, ELBv2, RDS),
     /// "ec2_filter" for EC2-style Filter.N.Name/Value params (VPC subnets, security groups)
     #[serde(default = "default_filter_type")]
     pub filter_type: String,
+
+    #[serde(default)]
+    pub parent_id_path: Option<String>,
+
+    /// Metric parameters mapped to fields in the parent resource.
+    ///
+    /// Example:
+    /// "VpcId": "VpcId"
+    /// "VpcEndpointId": "VpcEndpointId"
+    /// "VpcEndpointType": "VpcEndpointType"
+    /// "ServiceName": "ServiceName"
+    #[serde(default)]
+    pub metric_params: HashMap<String, String>,
 }
 
 fn default_filter_type() -> String {
@@ -215,6 +239,13 @@ pub struct ResourceDef {
     /// If true, preserve the order returned by the API instead of sorting alphabetically
     #[serde(default)]
     pub preserve_order: bool,
+
+    #[serde(default)]
+    pub region: Option<String>,
+
+    #[serde(default)]
+    pub cross_region: bool,
+
 }
 
 impl ResourceDef {
@@ -246,10 +277,39 @@ pub struct ResourceConfig {
     pub color_maps: HashMap<String, Vec<ColorDef>>,
     #[serde(default)]
     pub resources: HashMap<String, ResourceDef>,
+    #[serde(default)]
+    pub metrics: HashMap<String, MetricDef>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Deserialize)]
+pub struct MetricDef {
+    pub display_name: String,
+    pub service: String,
+    pub sdk_method: String,
+
+    #[serde(default)]
+    pub static_params: HashMap<String, String>,
+
+    #[serde(default)]
+    pub dimensions: HashMap<String, String>,
+
+    /// Path to the metric datapoints in the API response.
+    /// Example:
+    /// /GetMetricStatisticsResponse/GetMetricStatisticsResult/Datapoints/member
+    #[serde(default)]
+    pub response_root: Option<String>,
+
+    pub columns: Vec<ColumnDef>,
 }
 
 /// Global registry loaded from JSON
 static REGISTRY: OnceLock<ResourceConfig> = OnceLock::new();
+
+#[allow(dead_code)]
+pub fn get_metric(key: &str) -> Option<&'static MetricDef> {
+    get_registry().metrics.get(key)
+}
 
 /// Get the resource registry (loads from embedded JSON on first access)
 pub fn get_registry() -> &'static ResourceConfig {
@@ -257,6 +317,7 @@ pub fn get_registry() -> &'static ResourceConfig {
         let mut final_config = ResourceConfig {
             color_maps: HashMap::new(),
             resources: HashMap::new(),
+            metrics: HashMap::new(),
         };
 
         for content in RESOURCE_FILES {
@@ -264,6 +325,7 @@ pub fn get_registry() -> &'static ResourceConfig {
                 .unwrap_or_else(|e| panic!("Failed to parse embedded resource JSON: {}", e));
             final_config.color_maps.extend(partial.color_maps);
             final_config.resources.extend(partial.resources);
+            final_config.metrics.extend(partial.metrics);
         }
 
         final_config

@@ -1,0 +1,91 @@
+{
+  "resources": {
+    "vpc-endpoint-active-connections": {
+      "display_name": "Active Connections",
+      "service": "monitoring",
+      "sdk_method": "get_metric_statistics",
+      "sdk_method_params": {},
+      "response_path": "datapoints",
+      "id_field": "Timestamp",
+      "name_field": "Timestamp",
+      "is_global": false,
+"static_params": {
+  "Namespace": "AWS/PrivateLinkEndpoints",
+  "MetricName": "ActiveConnections",
+  "Period": "300",
+  "Statistics.member.1": "Average",
+  "Statistics.member.2": "Maximum",
+  "Statistics.member.3": "Minimum"
+},
+
+      "columns": [
+        {
+          "header": "TIMESTAMP",
+          "json_path": "Timestamp",
+          "width": 32
+        },
+        {
+          "header": "VALUE",
+          "json_path": "Average",
+          "width": 15
+        },
+        {
+          "header": "MAX",
+          "json_path": "Maximum",
+          "width": 15
+        },
+        {
+          "header": "MIN",
+          "json_path": "Minimum",
+          "width": 15
+        },
+        {
+          "header": "UNIT",
+          "json_path": "Unit",
+          "width": 12
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "service_name": "monitoring",
+        "action": "GetMetricStatistics",
+        "response_root": "/GetMetricStatisticsResponse/GetMetricStatisticsResult/Datapoints/member",
+        "param_mapping": {
+          "namespace": "Namespace",
+          "metric_name": "MetricName",
+          "start_time": "StartTime",
+          "end_time": "EndTime",
+          "period": "Period",
+          "unit": "Unit"
+        }
+      },
+
+      "field_mappings": {
+        "Timestamp": {
+          "source": "/Timestamp",
+          "default": "-"
+        },
+        "Average": {
+          "source": "/Average",
+          "default": "-"
+        },
+        "Maximum": {
+          "source": "/Maximum",
+          "default": "-"
+        },
+        "Minimum": {
+          "source": "/Minimum",
+          "default": "-"
+        },
+        "Unit": {
+          "source": "/Unit",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

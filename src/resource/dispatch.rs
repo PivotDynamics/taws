@@ -10,13 +10,16 @@
 
 use super::field_mapper::build_response;
 use super::handlers::get_protocol_handler;
-use super::protocol::ApiProtocol;
+use super::protocol::{ApiConfig, ApiProtocol};
 use super::registry::get_resource;
 use crate::aws::client::AwsClients;
 use crate::aws::http::xml_to_json;
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 use tracing::debug;
+use std::collections::HashMap;
+use chrono::{Duration, Utc};
+use super::registry::get_metric;
 
 // =============================================================================
 // Helper Functions
@@ -111,22 +114,162 @@ pub async fn invoke_list(
         .as_deref()
         .unwrap_or(&resource_def.service);
 
+    let (items, next_token) = if resource_def.cross_region {
+        let regions = crate::aws::regions::discover_regions(clients).await?;
+        debug!(
+          "Cross-region resource '{}' will query {} regions: {:?}",
+            resource_key,
+            regions.len(),
+            regions
+        );
+
+        let mut items = Vec::new();
+
+        for region in regions {
+             debug!(
+                "Cross-region resource '{}' querying region '{}'",
+                resource_key,
+                region
+            );
+
+            let parsed = handler
+                .invoke(
+                    clients,
+                    service,
+                    api_config,
+                    params,
+                    &resource_def.field_mappings,
+                    Some(&region),
+                )
+                .await?;
+
+            items.extend(parsed.items);
+        }
+
+        (items, None)
+    } else {
+        let parsed = handler
+            .invoke(
+                clients,
+                service,
+                api_config,
+                params,
+                &resource_def.field_mappings,
+                resource_def.region.as_deref(),
+            )
+            .await?;
+
+        (parsed.items, parsed.next_token)
+    };
+
+    Ok(build_response(
+        items,
+        &resource_def.response_path,
+        next_token,
+    ))
+}
+
+
+fn resolve_metric_param(template: &str, params: &Value) -> Result<String> {
+    if !template.starts_with('$') {
+        return Ok(template.to_string());
+    }
+
+    let key = &template[1..];
+
+    params
+        .get(key)
+        .and_then(Value::as_str)
+        .map(String::from)
+        .ok_or_else(|| {
+            anyhow!(
+                "Missing metric parameter '{}' required by template '{}'",
+                key,
+                template
+            )
+        })
+}
+
+
+/// Invoke an AWS CloudWatch metric using JSON configuration.
+///
+/// Metrics are deliberately separate from ResourceDef because they represent
+/// an operation against a resource rather than an AWS resource themselves.
+pub async fn invoke_metric(
+    metric_key: &str,
+    clients: &AwsClients,
+    params: &Value,
+) -> Result<Value> {
+    let metric_def =
+        get_metric(metric_key)
+            .ok_or_else(|| anyhow!("Unknown metric: {}", metric_key))?;
+
+    let mut request_params = serde_json::Map::new();
+
+    // Static metric parameters.
+    for (key, value) in &metric_def.static_params {
+        request_params.insert(key.clone(), Value::String(value.clone()));
+    }
+
+    for (key, value) in &metric_def.dimensions {
+        let resolved = resolve_metric_param(value, params)?;
+
+        request_params.insert(key.clone(), Value::String(resolved));
+    }
+
+    let end_time = Utc::now();
+    let start_time = end_time - Duration::hours(1);
+
+    request_params.insert(
+        "StartTime".to_string(),
+        Value::String(start_time.to_rfc3339()),
+    );
+
+    request_params.insert(
+        "EndTime".to_string(),
+        Value::String(end_time.to_rfc3339()),
+    );
+
+    // Dynamic request parameters such as StartTime and EndTime.
+    if let Some(obj) = params.as_object() {
+        for (key, value) in obj {
+            if key.starts_with("StartTime")
+                || key.starts_with("EndTime")
+                || key.starts_with("Unit")
+            {
+                request_params.insert(key.clone(), value.clone());
+            }
+        }
+    }
+
+    let request_params = Value::Object(request_params);
+
+    let config = ApiConfig {
+        protocol: ApiProtocol::Query,
+        service_name: Some(metric_def.service.clone()),
+        action: Some("GetMetricStatistics".to_string()),
+        response_root: metric_def.response_root.clone(),
+
+        static_params: HashMap::new(),
+        ..Default::default()
+    };
+
+    let handler = get_protocol_handler(ApiProtocol::Query);
+
     let parsed = handler
         .invoke(
             clients,
-            service,
-            api_config,
-            params,
-            &resource_def.field_mappings,
+            &metric_def.service,
+            &config,
+            &request_params,
+            &HashMap::new(),
+            None,
         )
         .await?;
 
-    Ok(build_response(
-        parsed.items,
-        &resource_def.response_path,
-        parsed.next_token,
-    ))
+    Ok(Value::Array(parsed.items))
 }
+
 
 // =============================================================================
 // Legacy List Operations (special cases)

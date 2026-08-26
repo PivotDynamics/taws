@@ -1,0 +1,242 @@
+{
+  "resources": {
+    "direct-connect-gateways": {
+      "display_name": "Direct Connect Gateways",
+      "service": "directconnect",
+      "sdk_method": "describe_direct_connect_gateways",
+      "sdk_method_params": {},
+      "response_path": "direct_connect_gateways",
+      "id_field": "DirectConnectGatewayId",
+      "name_field": "DirectConnectGatewayName",
+      "is_global": true,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "DirectConnectGatewayName",
+          "width": 30
+        },
+        {
+          "header": "DXG ID",
+          "json_path": "DirectConnectGatewayId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "DirectConnectGatewayState",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "ASN",
+          "json_path": "AmazonSideAsn",
+          "width": 12
+        },
+        {
+          "header": "OWNER",
+          "json_path": "OwnerAccount",
+          "width": 16
+        }
+      ],
+
+      "sub_resources": [
+        {
+          "shortcut": "a",
+          "display_name": "TGW Associations",
+          "resource_key": "direct-connect-gateway-associations",
+          "parent_id_field": "DirectConnectGatewayId",
+          "filter_param": "directConnectGatewayId",
+          "filter_type": "scalar"
+        }
+      ],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGateways",
+        "response_root": "/directConnectGateways"
+      },
+
+      "field_mappings": {
+        "DirectConnectGatewayId": {
+          "source": "/directConnectGatewayId",
+          "default": "-"
+        },
+        "DirectConnectGatewayName": {
+          "source": "/directConnectGatewayName",
+          "default": "-"
+        },
+        "DirectConnectGatewayState": {
+          "source": "/directConnectGatewayState",
+          "default": "-"
+        },
+        "AmazonSideAsn": {
+          "source": "/amazonSideAsn",
+          "default": "-"
+        },
+        "OwnerAccount": {
+          "source": "/ownerAccount",
+          "default": "-"
+        },
+        "DirectConnectGatewayArn": {
+          "source": "/directConnectGatewayArn",
+          "default": "-"
+        },
+        "DirectConnectGatewayType": {
+          "source": "/directConnectGatewayType",
+          "default": "-"
+        },
+        "TotalPrefixPoolAllocations": {
+          "source": "/totalPrefixPoolAllocations",
+          "default": "-"
+        },
+        "Tags": {
+          "source": "/tags",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGateways",
+        "id_param": "directConnectGatewayId",
+        "response_path": "/directConnectGateways"
+      }
+    },
+
+    "direct-connect-gateway-associations": {
+      "display_name": "TGW Associations",
+      "service": "directconnect",
+      "sdk_method": "describe_direct_connect_gateway_associations",
+      "sdk_method_params": {},
+      "response_path": "direct_connect_gateway_associations",
+      "id_field": "AssociationId",
+      "name_field": "AssociationId",
+      "is_global": true,
+      "requires_parent": true,
+
+      "columns": [
+        {
+          "header": "ASSOC ID",
+          "json_path": "AssociationId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "AssociationState",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "TGW ID",
+          "json_path": "AssociatedGatewayId",
+          "width": 24
+        },
+        {
+          "header": "TYPE",
+          "json_path": "AssociatedGatewayType",
+          "width": 12
+        },
+        {
+          "header": "REGION",
+          "json_path": "AssociatedGatewayRegion",
+          "width": 14
+        },
+        {
+          "header": "PREFIXES",
+          "json_path": "AllowedPrefixCount",
+          "width": 10
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGatewayAssociations",
+        "response_root": "/directConnectGatewayAssociations",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "AssociationId": {
+          "source": "/associationId",
+          "default": "-"
+        },
+        "AssociationState": {
+          "source": "/associationState",
+          "default": "-"
+        },
+        "DirectConnectGatewayId": {
+          "source": "/directConnectGatewayId",
+          "default": "-"
+        },
+        "DirectConnectGatewayOwnerAccount": {
+          "source": "/directConnectGatewayOwnerAccount",
+          "default": "-"
+        },
+        "StateChangeError": {
+          "source": "/stateChangeError",
+          "default": "-"
+        },
+        "AssociatedGatewayId": {
+          "source": "/associatedGateway/id",
+          "default": "-"
+        },
+        "AssociatedGatewayType": {
+          "source": "/associatedGateway/type",
+          "default": "-"
+        },
+        "AssociatedGatewayRegion": {
+          "source": "/associatedGateway/region",
+          "default": "-"
+        },
+        "AssociatedGatewayOwnerAccount": {
+          "source": "/associatedGateway/ownerAccount",
+          "default": "-"
+        },
+        "VirtualGatewayId": {
+          "source": "/virtualGatewayId",
+          "default": "-"
+        },
+        "VirtualGatewayOwnerAccount": {
+          "source": "/virtualGatewayOwnerAccount",
+          "default": "-"
+        },
+        "VirtualGatewayRegion": {
+          "source": "/virtualGatewayRegion",
+          "default": "-"
+        },
+        "AllowedPrefixes": {
+          "source": "/allowedPrefixesToDirectConnectGateway"
+        },
+        "AllowedPrefixCount": {
+          "source": "/allowedPrefixesToDirectConnectGateway",
+          "transform": "array_length"
+        },
+        "AssociatedCoreNetwork": {
+          "source": "/associatedCoreNetwork"
+        },
+        "Tags": {
+          "source": "/tags",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGatewayAssociations",
+        "id_param": "associationId",
+        "response_path": "/directConnectGatewayAssociations"
+      }
+    }
+  }
+}

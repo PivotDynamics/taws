@@ -87,6 +87,22 @@ pub enum Protocol {
 /// Service definitions for all 30 supported services
 pub fn get_service(name: &str) -> Option<ServiceDefinition> {
     match name {
+        "directconnect" => Some(ServiceDefinition {
+            signing_name: "directconnect",
+            endpoint_prefix: "directconnect",
+            api_version: "2012-10-25",
+            protocol: Protocol::Json,
+            target_prefix: Some("OvertureService"),
+            is_global: false,
+        }),
+        "monitoring" => Some(ServiceDefinition {
+            signing_name: "monitoring",
+            endpoint_prefix: "monitoring",
+            api_version: "2010-08-01",
+            protocol: Protocol::Query,
+            target_prefix: None,
+            is_global: false,
+        }),
         "ec2" => Some(ServiceDefinition {
             signing_name: "ec2",
             endpoint_prefix: "ec2",
@@ -447,6 +463,93 @@ impl AwsHttpClient {
         ))
     }
 
+
+    fn get_regional_endpoint(
+        &self,
+        service: &ServiceDefinition,
+        region: &str,
+    ) -> Result<String> {
+        // If custom endpoint is set, use it for ALL services (LocalStack, etc.)
+        if let Some(ref endpoint) = self.endpoint_url {
+            return Ok(endpoint.clone());
+        }
+
+        let domain = Self::endpoint_domain(region);
+    
+        // Special case for S3
+        if service.signing_name == "s3" {
+            return Ok(format!("https://s3.{}.{}", region, domain));
+        }
+
+        // Global services should not be redirected to an arbitrary regional endpoint.
+        // Keep the existing global-service behavior.
+        if service.is_global {
+            return self.get_endpoint(service);
+        }
+    
+        Ok(format!(
+            "https://{}.{}.{}",
+            service.endpoint_prefix, region, domain
+        ))
+    }
+
+    pub async fn query_request_with_region(
+        &self,
+        service_name: &str,
+        action: &str,
+        params: &[(&str, &str)],
+        region: &str,
+    ) -> Result<String> {
+        debug!(
+            "Query regional request: service={}, action={}, region={}",
+            service_name, action, region
+        );
+        trace!("Query params: {:?}", params);
+
+        let service = get_service(service_name)
+            .ok_or_else(|| anyhow!("Unknown service: {}", service_name))?;
+    
+        let endpoint = self.get_regional_endpoint(&service, region)?;
+    
+        let mut query_params: Vec<(String, String)> = vec![
+            ("Action".to_string(), action.to_string()),
+            ("Version".to_string(), service.api_version.to_string()),
+        ];
+    
+        for (k, v) in params {
+            query_params.push((k.to_string(), v.to_string()));
+        }
+    
+        let query_string = query_params
+            .iter()
+            .map(|(k, v)| {
+                format!(
+                "{}={}",
+                urlencoding::encode(k),
+                urlencoding::encode(v)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("&");
+
+        let url = format!("{}/?{}", endpoint, query_string);
+    
+        debug!("Regional endpoint: {}", endpoint);
+        debug!(
+            "CALLING signed_request_with_region: service={}, region={}",
+            service_name, region
+        );
+        self.signed_request_with_region(
+            &service,
+            "POST",
+            &url,
+            "",
+            None,
+            region,
+        )
+        .await
+    }
+
     /// Determine the endpoint domain for a region (standard vs. sovereign)
     fn endpoint_domain(region: &str) -> &'static str {
         if region.starts_with(EUSC_PREFIX) {
@@ -527,6 +630,57 @@ impl AwsHttpClient {
         self.signed_request(&service, "POST", &url, body, Some(headers))
             .await
     }
+
+    pub async fn json_request_with_region(
+        &self,
+        service_name: &str,
+        target: &str,
+        body: &str,
+        region: &str,
+    ) -> Result<String> {
+        debug!(
+            "JSON regional request: service={}, target={}, region={}",
+            service_name, target, region
+        );
+        trace!("JSON body: {}", body);
+    
+        let service = get_service(service_name)
+            .ok_or_else(|| anyhow!("Unknown service: {}", service_name))?;
+
+        let endpoint = self.get_regional_endpoint(&service, region)?;
+        let url = format!("{}/", endpoint);
+
+        debug!("Regional endpoint: {}", endpoint);
+    
+        let target_header = format!(
+            "{}.{}",
+            service.target_prefix.unwrap_or(service.signing_name),
+            target
+        );
+    
+        let mut headers = HashMap::new();
+        headers.insert("X-Amz-Target".to_string(), target_header);
+        headers.insert(
+            "Content-Type".to_string(),
+            "application/x-amz-json-1.1".to_string(),
+        );
+    
+        debug!(
+            "CALLING JSON signed_request_with_region: service={}, region={}",
+            service_name, region
+        );
+    
+        self.signed_request_with_region(
+            &service,
+            "POST",
+            &url,
+            body,
+            Some(headers),
+            region,
+        )
+        .await
+    }
+
 
     /// Make a REST-JSON request (Lambda, API Gateway, EKS, etc.)
     pub async fn rest_json_request(
@@ -802,28 +956,31 @@ impl AwsHttpClient {
             }
         }
 
+        trace!("AWS HTTP REQUEST: {} {}", method, url);
         // Set body if present
         if !body.is_empty() {
             request = request.body(body.to_string());
         }
-
-        // Send request
-        trace!("Sending {} request to {}", method, url);
         let response = request.send().await?;
         let status = response.status();
-        let text = response.text().await?;
 
-        debug!("Response status: {}", status);
+        // Capture headers before consuming the response body.
+        let response_headers = response.headers().clone();
+    
+        let text = response.text().await?;
+        
+        debug!("AWS HTTP RESPONSE STATUS: {}", status);
+        trace!("AWS HTTP RESPONSE HEADERS:\n{:#?}", response_headers);
         trace!(
-            "Response body (first 2000 chars): {}",
-            &text[..text.len().min(2000)]
+            "AWS HTTP RESPONSE BODY ({} bytes):\n{}",
+            text.len(),
+            text
         );
 
         if !status.is_success() {
             warn!(
                 "AWS request failed: status={}, body={}",
-                status,
-                &text[..text.len().min(500)]
+                status, text
             );
             return Err(anyhow!("AWS request failed ({}): {}", status, text));
         }

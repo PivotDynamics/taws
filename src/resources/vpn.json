@@ -1,0 +1,138 @@
+{
+  "resources": {
+    "vpn-connections": {
+      "display_name": "VPN Connections",
+      "service": "ec2",
+      "sdk_method": "describe_vpn_connections",
+      "sdk_method_params": {},
+      "response_path": "vpn_connections",
+      "id_field": "VpnConnectionId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Tags.Name",
+          "width": 20
+        },
+        {
+          "header": "LOGS",
+          "json_path": "LogEnabled",
+          "width": 10
+        },
+        {
+          "header": "VPN ID",
+          "json_path": "VpnConnectionId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 12,
+          "color_map": "state"
+        },
+        {
+          "header": "CUSTOMER GW",
+          "json_path": "CustomerGatewayId",
+          "width": 24
+        },
+        {
+          "header": "TGW ID",
+          "json_path": "TransitGatewayId",
+          "width": 24
+        },
+        {
+          "header": "TUNNELS",
+          "json_path": "TunnelSummary",
+          "width": 10
+        },
+        {
+          "header": "ROUTES",
+          "json_path": "RouteSummary",
+          "width": 10
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeVpnConnections",
+        "response_root": "/DescribeVpnConnectionsResponse/vpnConnectionSet/item"
+      },
+
+      "field_mappings": {
+        "VpnConnectionId": {
+          "source": "/vpnConnectionId",
+          "default": "-"
+        },
+        "CustomerGatewayId": {
+          "source": "/customerGatewayId",
+          "default": "-"
+        },
+        "TransitGatewayId": {
+          "source": "/transitGatewayId",
+          "default": "-"
+        },
+        "VpnGatewayId": {
+          "source": "/vpnGatewayId",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "Type": {
+          "source": "/type",
+          "default": "-"
+        },
+        "Category": {
+          "source": "/category",
+          "default": "-"
+        },
+        "GatewayAssociationState": {
+          "source": "/gatewayAssociationState",
+          "default": "-"
+        },
+        "Options": {
+          "source": "/options"
+        },
+        "VgwTelemetry": {
+          "source": "/vgwTelemetry"
+        },
+        "Routes": {
+          "source": "/routes"
+        },
+        "LogEnabled": {
+          "source": "/options/logOptions/cloudWatchLogOptions/logEnabled",
+          "transform": "bool_to_yes_no",
+          "default": "-"
+        },
+        "BgpLogEnabled": {
+          "source": "/options/logOptions/cloudWatchLogOptions/bgpLogEnabled",
+          "transform": "bool_to_yes_no",
+          "default": "-"
+        },
+        "TunnelSummary": {
+          "source": "/vgwTelemetry/item",
+          "transform": "tunnel_status_summary"
+        },
+        "RouteSummary": {
+          "source": "/vgwTelemetry/item",
+          "transform": "first_item_field:acceptedRouteCount"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "tag_filter": {
+        "enabled": true
+      }
+    }
+  }
+}

@@ -6,8 +6,8 @@
 //! Resources with `api_config` defined will use data-driven dispatch,
 //! while legacy resources (S3 objects, STS) use the legacy invoke_sdk.
 
-use super::dispatch::{invoke_list, invoke_sdk};
-use super::registry::get_resource;
+use super::dispatch::{invoke_list, invoke_sdk,invoke_metric};
+use super::registry::{get_metric, get_resource};
 use crate::aws::client::AwsClients;
 use anyhow::{anyhow, Result};
 use serde_json::Value;
@@ -62,6 +62,86 @@ pub async fn fetch_resources_paginated(
     page_token: Option<&str>,
 ) -> Result<PaginatedResult> {
     // 1. Look up resource definition from JSON
+    tracing::debug!(
+        "fetch_resources_paginated: resource_key='{}', filters={:?}",
+        resource_key,
+        filters
+    );
+
+    let resource_exists = get_resource(resource_key).is_some();
+    let metric_exists = get_metric(resource_key).is_some();
+
+    tracing::debug!(
+        "Dispatcher lookup: key='{}', resource_exists={}, metric_exists={}",
+        resource_key,
+        resource_exists,
+        metric_exists
+    );
+
+    if metric_exists {
+        tracing::debug!(
+            "Metric detected: '{}' - entering metric execution path",
+            resource_key
+        );
+
+        let mut params = serde_json::Map::new();
+
+        for filter in filters {
+            let value = if filter.values.len() == 1 {
+                Value::String(filter.values[0].clone())
+            } else {
+                Value::Array(
+                    filter
+                        .values
+                        .iter()
+                        .map(|v| Value::String(v.clone()))
+                        .collect(),
+                )
+            };
+
+            tracing::debug!(
+                "Metric parameter: {} = {:?}",
+                filter.name,
+                value
+            );
+
+            params.insert(filter.name.clone(), value);
+        }
+
+        tracing::debug!(
+            "Invoking metric '{}' with params={:?}",
+            resource_key,
+            params
+        );
+
+        let response = invoke_metric(
+            resource_key,
+            clients,
+            &Value::Object(params),
+        )
+        .await?;
+
+        tracing::debug!(
+            "Metric '{}' returned {} items",
+            resource_key,
+            response.as_array().map(|a| a.len()).unwrap_or(0)
+        );
+
+        let items = response
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
+
+        return Ok(PaginatedResult {
+            items,
+            next_token: None,
+        });
+    }
+
+    tracing::debug!(
+        "Not a metric: '{}' - continuing with normal resource path",
+        resource_key
+    );
     let resource_def =
         get_resource(resource_key).ok_or_else(|| anyhow!("Unknown resource: {}", resource_key))?;
 
@@ -282,4 +362,54 @@ pub fn extract_json_value(item: &Value, path: &str) -> String {
         Value::Null => "-".to_string(),
         _ => "-".to_string(),
     }
+}
+
+pub fn extract_json_values(
+    item: &Value,
+    field: &str,
+    path: Option<&str>,
+) -> Vec<String> {
+    let Some(value) = item.get(field) else {
+        return Vec::new();
+    };
+
+    let items: Vec<&Value> = match value {
+        Value::Array(items) => items.iter().collect(),
+        Value::Object(_) => vec![value],
+        Value::String(_) | Value::Number(_) | Value::Bool(_) => vec![value],
+        Value::Null => return Vec::new(),
+    };
+
+    items
+        .iter()
+        .filter_map(|item| {
+            let value = match path {
+                Some(path) => extract_json_value(item, path),
+
+                None => match *item {
+                    Value::String(s) => s.clone(),
+
+                    Value::Number(n) => n.to_string(),
+
+                    Value::Bool(b) => {
+                        if *b {
+                            "Yes".to_string()
+                        } else {
+                            "No".to_string()
+                        }
+                    }
+
+                    Value::Object(_) | Value::Array(_) | Value::Null => {
+                        return None;
+                    }
+                },
+            };
+
+            if value != "-" {
+                Some(value)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
