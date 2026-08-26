@@ -8,6 +8,7 @@
       "response_path": "connections",
       "id_field": "ConnectionId",
       "cross_region": true,
+      "region_field": "Region",
       "name_field": "ConnectionName",
       "is_global": false,
 
@@ -30,7 +31,7 @@
         },
         {
           "header": "LOCATION",
-          "json_path": "Location",
+          "json_path": "Region",
           "width": 32
         },
         {
@@ -46,7 +47,6 @@
       ],
 
       "sub_resources": [],
-
       "actions": [],
 
       "api_config": {

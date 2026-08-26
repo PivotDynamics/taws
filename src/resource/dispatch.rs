@@ -647,6 +647,7 @@ async fn invoke_describe(
     resource_key: &str,
     clients: &AwsClients,
     resource_id: &str,
+    resource_data: &Value,
 ) -> Result<Value> {
     let resource_def =
         get_resource(resource_key).ok_or_else(|| anyhow!("Unknown resource: {}", resource_key))?;
@@ -661,10 +662,25 @@ async fn invoke_describe(
         .as_deref()
         .unwrap_or(&resource_def.service);
 
-    debug!(
-        "Describing resource: {} with id: {} (service: {}, protocol: {:?})",
-        resource_key, resource_id, service, describe_config.protocol
-    );
+    let region = if resource_def.cross_region {
+    resource_data
+        .get("Region")
+        .and_then(Value::as_str)
+        .filter(|r| !r.is_empty() && *r != "-")
+        .unwrap_or(&clients.region)
+} else {
+    &clients.region
+};
+
+debug!(
+    "Describing resource: {} with id: {} (service: {}, region: {}, protocol: {:?})",
+    resource_key,
+    resource_id,
+    service,
+    region,
+    describe_config.protocol
+);
+
 
     let mut result = match describe_config.protocol {
         ApiProtocol::Query => {
@@ -700,11 +716,17 @@ async fn invoke_describe(
                 let id_param = describe_config.id_param.as_deref().unwrap_or("id");
                 json!({ id_param: resource_id }).to_string()
             };
-
-            let response = clients
-                .http
-                .json_request(service, action_name, &body)
-                .await?;
+            let response = if resource_def.cross_region {
+                clients
+                    .http
+                    .json_request_with_region(service, action_name, &body, region)
+                .await?
+            } else {
+                clients
+                    .http
+                    .json_request(service, action_name, &body)
+                .await?
+            };
             let json: Value = serde_json::from_str(&response)?;
 
             if let Some(ref path) = describe_config.response_path {
@@ -949,6 +971,7 @@ pub async fn describe_resource(
     resource_key: &str,
     clients: &AwsClients,
     resource_id: &str,
+    resource_data: &Value,
 ) -> Result<Value> {
     // S3 buckets need special handling for region resolution
     if resource_key == "s3-buckets" {
@@ -965,7 +988,7 @@ pub async fn describe_resource(
         ));
     }
 
-    invoke_describe(resource_key, clients, resource_id).await
+    invoke_describe(resource_key, clients, resource_id,resource_data).await
 }
 
 /// Special handler for S3 bucket describe (needs region resolution)

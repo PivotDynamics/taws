@@ -1247,6 +1247,7 @@ impl App {
                             &self.current_resource_key,
                             &self.clients,
                             &id,
+                            &item,
                         )
                         .await
                         {
