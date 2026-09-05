@@ -1,0 +1,108 @@
+{
+  "resources": {
+    "direct-connect-tgw": {
+      "display_name": "Direct Connect Transit Gateways",
+      "service": "ec2",
+      "sdk_method": "describe_transit_gateways",
+      "sdk_method_params": {},
+      "response_path": "transit_gateways",
+      "id_field": "TransitGatewayId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+      "cross_region": true,
+      "region_field": "Region",
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Tags.Name",
+          "width": 35
+        },
+        {
+          "header": "TGW ID",
+          "json_path": "TransitGatewayId",
+          "width": 28
+        },
+        {
+          "header": "REGION",
+          "json_path": "Region",
+          "width": 16
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "ASN",
+          "json_path": "Options.amazonSideAsn",
+          "width": 14
+        }
+      ],
+
+      "sub_resources": [
+        {
+          "shortcut": "a",
+          "display_name": "Attachments",
+          "resource_key": "transit-gateway-attachments",
+          "parent_id_field": "TransitGatewayId",
+          "filter_param": "transit-gateway-id",
+          "filter_type": "ec2_filter",
+          "region_field": "parent"
+        },
+        {
+          "shortcut": "r",
+          "display_name": "Route Tables",
+          "resource_key": "transit-gateway-route-tables",
+          "parent_id_field": "TransitGatewayId",
+          "filter_param": "transit-gateway-id",
+          "filter_type": "ec2_filter",
+          "region_field": "parent"
+        }
+      ],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeTransitGateways",
+        "response_root": "/DescribeTransitGatewaysResponse/transitGatewaySet/item"
+      },
+
+      "field_mappings": {
+        "TransitGatewayId": {
+          "source": "/transitGatewayId",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "OwnerId": {
+          "source": "/ownerId",
+          "default": "-"
+        },
+        "Description": {
+          "source": "/description",
+          "default": "-"
+        },
+        "CreationTime": {
+          "source": "/creationTime",
+          "default": "-"
+        },
+        "Options": {
+          "source": "/options"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "tag_filter": {
+        "enabled": true
+      }
+    }
+  }
+}

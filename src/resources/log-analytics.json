@@ -1,0 +1,84 @@
+{
+  "resources": {
+    "cloudwatch-log-analytics-queries": {
+      "display_name": "Log Analytics Queries",
+      "service": "cloudwatchlogs",
+      "sdk_method": "describe_query_definitions",
+      "sdk_method_params": {},
+      "response_path": "query_definitions",
+      "id_field": "QueryDefinitionId",
+      "name_field": "Name",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Name",
+          "width": 40
+        },
+        {
+          "header": "ID",
+          "json_path": "QueryDefinitionId",
+          "width": 38
+        },
+        {
+          "header": "LANGUAGE",
+          "json_path": "QueryLanguage",
+          "width": 12
+        },
+        {
+          "header": "LOG GROUPS",
+          "json_path": "LogGroupNames",
+          "width": 45
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeQueryDefinitions",
+        "response_root": "/queryDefinitions",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "QueryDefinitionId": {
+          "source": "/queryDefinitionId",
+          "default": "-"
+        },
+        "Name": {
+          "source": "/name",
+          "default": "-"
+        },
+        "QueryString": {
+          "source": "/queryString",
+          "default": "-"
+        },
+        "LogGroupNames": {
+          "source": "/logGroupNames",
+          "transform": "array_to_string",
+          "default": "-"
+        },
+        "QueryLanguage": {
+          "source": "/queryLanguage",
+          "default": "-"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeQueryDefinitions",
+        "id_param": "queryDefinitionId",
+        "response_path": "/queryDefinitions"
+      }
+    }
+  }
+}

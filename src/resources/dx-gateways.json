@@ -41,6 +41,14 @@
 
       "sub_resources": [
         {
+          "shortcut": "c",
+          "display_name": "Connection Attachments",
+          "resource_key": "direct-connect-gateway-attachments",
+          "parent_id_field": "DirectConnectGatewayId",
+          "filter_param": "directConnectGatewayId",
+          "filter_type": "scalar"
+        },
+        {
           "shortcut": "a",
           "display_name": "TGW Associations",
           "resource_key": "direct-connect-gateway-associations",

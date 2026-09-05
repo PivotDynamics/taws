@@ -1,0 +1,94 @@
+{
+  "resources": {
+    "transit-gateway-routes": {
+      "display_name": "Transit Gateway Routes",
+      "visible_resource": false,
+      "service": "ec2",
+      "sdk_method": "search_transit_gateway_routes",
+      "sdk_method_params": {
+        "filter:type": [
+          "static",
+          "propagated"
+        ]
+      },
+      "response_path": "Routes",
+      "id_field": "DestinationCidrBlock",
+      "name_field": "DestinationCidrBlock",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "DESTINATION",
+          "json_path": "DestinationCidrBlock",
+          "width": 10
+        },
+        {
+          "header": "TYPE",
+          "json_path": "Type",
+          "width": 7
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 5,
+          "color_map": "state"
+        },
+        {
+          "header": "RESOURCE TYPE",
+          "json_path": "ResourceType",
+          "width": 7
+        },
+        {
+          "header": "RESOURCE ID",
+          "json_path": "ResourceId",
+          "width": 45
+        },
+        {
+          "header": "ATTACHMENT ID",
+          "json_path": "TransitGatewayAttachmentId",
+          "width": 25
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "SearchTransitGatewayRoutes",
+        "response_root": "/SearchTransitGatewayRoutesResponse/routeSet/item"
+      },
+
+      "field_mappings": {
+        "DestinationCidrBlock": {
+          "source": "/destinationCidrBlock",
+          "default": "-"
+        },
+        "Type": {
+          "source": "/type",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "ResourceType": {
+          "source": "/transitGatewayAttachments/item/resourceType",
+          "transform": "array_to_string",
+          "default": "-"
+        },
+        "ResourceId": {
+          "source": "/transitGatewayAttachments/item/resourceId",
+          "transform": "array_to_string",
+          "default": "-"
+        },
+        "TransitGatewayAttachmentId": {
+          "source": "/transitGatewayAttachments/item/transitGatewayAttachmentId",
+          "transform": "array_to_string",
+          "default": "-"
+        }
+      }
+    }
+  }
+}
+

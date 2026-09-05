@@ -87,12 +87,28 @@ pub enum Protocol {
 /// Service definitions for all 30 supported services
 pub fn get_service(name: &str) -> Option<ServiceDefinition> {
     match name {
+        "transfer" => Some(ServiceDefinition {
+            signing_name: "transfer",
+            endpoint_prefix: "transfer",
+            api_version: "2018-11-05",
+            protocol: Protocol::Json,
+            target_prefix: Some("TransferService"),
+            is_global: false,
+        }),
         "directconnect" => Some(ServiceDefinition {
             signing_name: "directconnect",
             endpoint_prefix: "directconnect",
             api_version: "2012-10-25",
             protocol: Protocol::Json,
             target_prefix: Some("OvertureService"),
+            is_global: false,
+        }),
+        "synthetics" => Some(ServiceDefinition {
+            signing_name: "synthetics",
+            endpoint_prefix: "synthetics",
+            api_version: "2017-10-11",
+            protocol: Protocol::RestJson,
+            target_prefix: None,
             is_global: false,
         }),
         "monitoring" => Some(ServiceDefinition {
@@ -695,6 +711,13 @@ impl AwsHttpClient {
             service_name, method, path
         );
         trace!("REST-JSON body: {:?}", body);
+
+        debug!("========== REST-JSON DEBUG ==========");
+        debug!("service_name = {:?}", service_name);
+        debug!("method       = {:?}", method);
+        debug!("path         = {:?}", path);
+        debug!("body         = {:?}", body);
+
 
         let service = get_service(service_name)
             .ok_or_else(|| anyhow!("Unknown service: {}", service_name))?;

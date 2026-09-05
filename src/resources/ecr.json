@@ -9,23 +9,135 @@
       "id_field": "repositoryArn",
       "name_field": "repositoryName",
       "is_global": false,
+
       "columns": [
-        { "header": "REPOSITORY NAME", "json_path": "repositoryName", "width": 40 },
-        { "header": "URI", "json_path": "repositoryUri", "width": 60 },
-        { "header": "CREATED", "json_path": "createdAt", "width": 25 }
+        {
+          "header": "REPOSITORY NAME",
+          "json_path": "repositoryName",
+          "width": 40
+        },
+        {
+          "header": "URI",
+          "json_path": "repositoryUri",
+          "width": 60
+        },
+        {
+          "header": "CREATED",
+          "json_path": "createdAt",
+          "width": 25
+        }
       ],
-      "sub_resources": [],
+
+      "sub_resources": [
+        {
+          "shortcut": "i",
+          "display_name": "Images",
+          "resource_key": "ecr-images",
+          "parent_id_field": "repositoryName",
+          "filter_param": "repositoryName",
+          "filter_type": "scalar"
+        }
+      ],
+
       "actions": [],
+
       "api_config": {
         "protocol": "json",
         "action": "DescribeRepositories",
         "response_root": "/repositories"
       },
+
       "field_mappings": {
-        "repositoryName": { "source": "/repositoryName", "default": "-" },
-        "repositoryArn": { "source": "/repositoryArn", "default": "-" },
-        "repositoryUri": { "source": "/repositoryUri", "default": "-" },
-        "createdAt": { "source": "/createdAt", "default": "-" }
+        "repositoryName": {
+          "source": "/repositoryName",
+          "default": "-"
+        },
+        "repositoryArn": {
+          "source": "/repositoryArn",
+          "default": "-"
+        },
+        "repositoryUri": {
+          "source": "/repositoryUri",
+          "default": "-"
+        },
+        "createdAt": {
+          "source": "/createdAt",
+          "default": "-"
+        }
+      }
+    },
+
+    "ecr-images": {
+      "display_name": "ECR Images",
+      "service": "ecr",
+      "sdk_method": "describe_images",
+      "sdk_method_params": {},
+      "response_path": "image_details",
+      "id_field": "imageDigest",
+      "name_field": "imageTags.0",
+      "is_global": false,
+      "requires_parent": true,
+
+      "columns": [
+        {
+          "header": "TAG",
+          "json_path": "imageTags.0",
+          "width": 30
+        },
+        {
+          "header": "DIGEST",
+          "json_path": "imageDigest",
+          "width": 70
+        },
+        {
+          "header": "PUSHED",
+          "json_path": "imagePushedAt",
+          "width": 25
+        },
+        {
+          "header": "SIZE",
+          "json_path": "imageSizeInBytes",
+          "width": 15
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeImages",
+        "response_root": "/imageDetails",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "imageDigest": {
+          "source": "/imageDigest",
+          "default": "-"
+        },
+        "imageTags": {
+          "source": "/imageTags",
+          "default": "-"
+        },
+        "imagePushedAt": {
+          "source": "/imagePushedAt",
+          "default": "-"
+        },
+        "imageSizeInBytes": {
+          "source": "/imageSizeInBytes",
+          "default": "-"
+        },
+        "imageManifestMediaType": {
+          "source": "/imageManifestMediaType",
+          "default": "-"
+        }
       }
     }
   }

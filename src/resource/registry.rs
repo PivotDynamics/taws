@@ -8,7 +8,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use super::protocol::{ActionConfig, ApiConfig, DescribeConfig, FieldMapping};
+//use super::protocol::{ActionConfig, ApiConfig, DescribeConfig, FieldMapping, ListEnrichment };
+use super::protocol::{ActionConfig, ApiConfig, DescribeConfig, FieldMapping };
+
 
 /// Embedded resource JSON files (compiled into the binary)
 const RESOURCE_FILES: &[&str] = &[
@@ -20,6 +22,9 @@ const RESOURCE_FILES: &[&str] = &[
     include_str!("../resources/cloudfront.json"),
     include_str!("../resources/cloudtrail.json"),
     include_str!("../resources/cloudwatch.json"),
+    include_str!("../resources/cloudwatch-alarms.json"),
+    include_str!("../resources/log-analytics.json"),
+    include_str!("../resources/synthetic-canary.json"),
     include_str!("../resources/codebuild.json"),
     include_str!("../resources/codepipeline.json"),
     include_str!("../resources/cognito.json"),
@@ -45,14 +50,30 @@ const RESOURCE_FILES: &[&str] = &[
     include_str!("../resources/ssm.json"),
     include_str!("../resources/sts.json"),
     include_str!("../resources/vpc.json"),
+    include_str!("../resources/vpc-route-table.json"),
+    include_str!("../resources/vpc-routes.json"),
     include_str!("../resources/vpcendpoint.json"),
     include_str!("../resources/enis.json"),
     include_str!("../resources/vpcendpointmonitoring.json"),
     include_str!("../resources/vpn.json"),
-    include_str!("../resources/vpc-tgw.json"),
+    include_str!("../resources/tgw.json"),
+    include_str!("../resources/tgw-attachment.json"),
+    include_str!("../resources/tgw-route-table.json"),
+    include_str!("../resources/tgw-routes.json"),
     include_str!("../resources/dx-gateways.json"),
+    include_str!("../resources/dx-gateway-connection-attachment.json"),    
+    include_str!("../resources/dx-transit-gateways.json"),    
+    include_str!("../resources/dx-vif.json"),
     include_str!("../resources/dx-connetions.json"),
-
+    include_str!("../resources/dx-vif-advertised-routes.json"),
+    include_str!("../resources/dx-vif-accepted-routes.json"),
+    include_str!("../resources/eip.json"),
+    include_str!("../resources/transfer-family-sftp.json"),
+    include_str!("../resources/transfer-family-sftp-users.json"),
+    include_str!("../resources/transfer-family-sftp-endpoints.json"),
+    include_str!("../resources/security-group.json"),
+    include_str!("../resources/security-group-ingress.json"),
+    include_str!("../resources/security-group-egress.json"),
 ];
 
 /// Color definition from JSON
@@ -70,6 +91,8 @@ pub struct ColumnDef {
     pub width: u16,
     #[serde(default)]
     pub color_map: Option<String>,
+    #[serde(default)]
+    pub value_mappings: Option<HashMap<String, String>>,
 }
 
 /// Sub-resource definition from JSON
@@ -100,6 +123,8 @@ pub struct SubResourceDef {
     /// "ServiceName": "ServiceName"
     #[serde(default)]
     pub metric_params: HashMap<String, String>,
+    #[serde(default)]
+    pub region_field: Option<String>,
 }
 
 fn default_filter_type() -> String {
@@ -210,7 +235,7 @@ pub struct ResourceDef {
     /// If present, this takes precedence over sdk_method for fetching
     #[serde(default)]
     pub api_config: Option<ApiConfig>,
-
+    
     /// Field mappings from raw API response to normalized output
     /// If present, these are used to transform API responses
     #[serde(default)]
@@ -246,6 +271,12 @@ pub struct ResourceDef {
     #[serde(default)]
     pub cross_region: bool,
 
+    #[serde(default = "default_true")]
+    pub visible_resource: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl ResourceDef {
@@ -337,13 +368,11 @@ pub fn get_resource(key: &str) -> Option<&'static ResourceDef> {
     get_registry().resources.get(key)
 }
 
-/// Get all resource keys (for autocomplete)
-/// Excludes resources that require a parent context (like log-streams, ecs-tasks, etc.)
 pub fn get_all_resource_keys() -> Vec<&'static str> {
     get_registry()
         .resources
         .iter()
-        .filter(|(_, def)| !def.requires_parent)
+        .filter(|(_, def)| !def.requires_parent && def.visible_resource)
         .map(|(key, _)| key.as_str())
         .collect()
 }

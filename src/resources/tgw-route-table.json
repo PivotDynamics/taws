@@ -1,0 +1,94 @@
+{
+  "resources": {
+    "transit-gateway-route-tables": {
+      "display_name": "Transit Gateway Route Tables",
+      "visible_resource": false,
+      "service": "ec2",
+      "sdk_method": "describe_transit_gateway_route_tables",
+      "sdk_method_params": {},
+      "response_path": "transitGatewayRouteTables",
+      "id_field": "TransitGatewayRouteTableId",
+      "name_field": "TransitGatewayRouteTableId",
+      "is_global": false,
+      "columns": [{
+        "header": "ROUTE TABLE ID",
+        "json_path": "TransitGatewayRouteTableId",
+        "width": 34
+      },
+      {
+        "header": "TGW ID",
+        "json_path": "TransitGatewayId",
+        "width": 28
+      },
+      {
+        "header": "STATE",
+        "json_path": "State",
+        "width": 14,
+        "color_map": "state"
+      },
+      {
+        "header": "DEFAULT ASSOCIATION",
+        "json_path": "DefaultAssociationRouteTable",
+        "width": 22
+      },
+      {
+        "header": "DEFAULT PROPAGATION",
+        "json_path": "DefaultPropagationRouteTable",
+        "width": 22
+      }],
+  
+      "sub_resources": [{
+        "shortcut": "r",
+        "display_name": "Routes",
+        "resource_key": "transit-gateway-routes",
+        "parent_id_field": "TransitGatewayRouteTableId",
+        "filter_param": "TransitGatewayRouteTableId",
+        "filter_type": "scalar"
+      }],
+  
+      "actions": [],
+  
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeTransitGatewayRouteTables",
+        "response_root": "/DescribeTransitGatewayRouteTablesResponse/transitGatewayRouteTables/item"
+      },
+  
+      "field_mappings": {
+        "TransitGatewayRouteTableId": {
+          "source": "/transitGatewayRouteTableId",
+          "default": "-"
+        },
+        "TransitGatewayId": {
+          "source": "/transitGatewayId",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "DefaultAssociationRouteTable": {
+          "source": "/defaultAssociationRouteTable",
+          "default": "-"
+        },
+        "DefaultPropagationRouteTable": {
+          "source": "/defaultPropagationRouteTable",
+          "default": "-"
+        },
+        "CreationTime": {
+          "source": "/creationTime",
+          "default": "-"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+          }
+      },
+    
+      "tag_filter": {
+        "enabled": true
+      }
+    }
+  }
+}
+

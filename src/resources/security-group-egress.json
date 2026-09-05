@@ -1,0 +1,59 @@
+{
+  "resources": {
+    "security-group-egress": {
+      "display_name": "Egress Rules",
+      "service": "ec2",
+      "sdk_method": "",
+      "is_resource": true,
+      "embedded": true,
+      "sdk_method_params": {},
+      "response_path": "",
+      "id_field": "ipProtocol",
+      "name_field": "ipProtocol",
+      "is_global": false,
+      "columns": [
+        {
+          "header": "PROTOCOL",
+          "json_path": "ipProtocol",
+          "width": 12,
+          "value_mappings": {
+            "-1": "default"
+          }
+        },
+        {
+          "header": "FROM",
+          "json_path": "fromPort",
+          "width": 8
+        },
+        {
+          "header": "TO",
+          "json_path": "toPort",
+          "width": 8
+        },
+        {
+          "header": "CIDR",
+          "json_path": "ipRanges.item.cidrIp",
+          "width": 20
+        },
+        {
+          "header": "DESCRIPTION",
+          "json_path": "ipRanges.item.description",
+          "width": 30
+        },
+        {
+          "header": "DEST SG",
+          "json_path": "groups.item.groupId",
+          "width": 24
+        },
+        {
+          "header": "PREFIX LIST",
+          "json_path": "prefixListIds.item.prefixListId",
+          "width": 24
+        }
+      ],
+      "sub_resources": [],
+      "actions": [],
+      "field_mappings": {}
+    }
+  }
+}

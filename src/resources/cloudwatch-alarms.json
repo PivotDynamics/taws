@@ -1,0 +1,142 @@
+{
+  "resources": {
+    "cloudwatch-alarms": {
+      "display_name": "CloudWatch Alarms",
+      "service": "monitoring",
+      "sdk_method": "describe_alarms",
+      "sdk_method_params": {},
+      "response_path": "MetricAlarms",
+      "id_field": "AlarmName",
+      "name_field": "AlarmName",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "AlarmName",
+          "width": 30
+        },
+        {
+          "header": "STATE",
+          "json_path": "StateValue",
+          "width": 18,
+          "color_map": "state"
+        },
+        {
+          "header": "METRIC",
+          "json_path": "MetricName",
+          "width": 25
+        },
+        {
+          "header": "NAMESPACE",
+          "json_path": "Namespace",
+          "width": 20
+        },
+        {
+          "header": "STATISTIC",
+          "json_path": "Statistic",
+          "width": 12
+        },
+        {
+          "header": "PERIOD",
+          "json_path": "Period",
+          "width": 10
+        },
+        {
+          "header": "THRESHOLD",
+          "json_path": "Threshold",
+          "width": 12
+        },
+        {
+          "header": "OPERATOR",
+          "json_path": "ComparisonOperator",
+          "width": 25
+        },
+        {
+          "header": "UPDATED",
+          "json_path": "StateUpdatedTimestamp",
+          "width": 25
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+  "protocol": "query",
+  "service_name": "monitoring",
+  "action": "DescribeAlarms",
+    "response_root": "/DescribeAlarmsResponse/DescribeAlarmsResult/MetricAlarms/member",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/NextToken",
+          "max_results_param": "MaxRecords",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "AlarmName": {
+          "source": "/AlarmName",
+          "default": "-"
+        },
+        "AlarmArn": {
+          "source": "/AlarmArn",
+          "default": "-"
+        },
+        "AlarmDescription": {
+          "source": "/AlarmDescription",
+          "default": "-"
+        },
+        "StateValue": {
+          "source": "/StateValue",
+          "default": "-"
+        },
+        "StateReason": {
+          "source": "/StateReason",
+          "default": "-"
+        },
+        "StateUpdatedTimestamp": {
+          "source": "/StateUpdatedTimestamp",
+          "default": "-"
+        },
+        "MetricName": {
+          "source": "/MetricName",
+          "default": "-"
+        },
+        "Namespace": {
+          "source": "/Namespace",
+          "default": "-"
+        },
+        "Statistic": {
+          "source": "/Statistic",
+          "default": "-"
+        },
+        "Period": {
+          "source": "/Period",
+          "default": "-"
+        },
+        "EvaluationPeriods": {
+          "source": "/EvaluationPeriods",
+          "default": "-"
+        },
+        "DatapointsToAlarm": {
+          "source": "/DatapointsToAlarm",
+          "default": "-"
+        },
+        "Threshold": {
+          "source": "/Threshold",
+          "default": "-"
+        },
+        "ComparisonOperator": {
+          "source": "/ComparisonOperator",
+          "default": "-"
+        },
+        "TreatMissingData": {
+          "source": "/TreatMissingData",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

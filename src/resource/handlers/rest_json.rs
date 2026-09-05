@@ -110,6 +110,17 @@ impl ProtocolHandler for RestJsonProtocolHandler {
     ) -> Result<(Vec<Value>, Option<String>)> {
         let json: Value = serde_json::from_str(response)?;
 
+        tracing::debug!(
+            "REST-JSON parse_items: response_root={:?}",
+            config.response_root
+        );
+
+        
+        tracing::debug!(
+            "REST-JSON parse_items: parsed response={}",
+            serde_json::to_string_pretty(&json)?
+        );
+
         // Extract items using response_root path
         let items = if let Some(root) = &config.response_root {
             extract_list(&json, root)
@@ -119,6 +130,15 @@ impl ProtocolHandler for RestJsonProtocolHandler {
             vec![json.clone()]
         };
 
+        tracing::debug!(
+          "REST-JSON parse_items: extracted {} items",
+            items.len()
+        );
+
+        tracing::debug!(
+          "REST-JSON parse_items: first item={:?}",
+        items.first()
+        );
         // Extract next token if pagination is configured
         let next_token = config
             .pagination

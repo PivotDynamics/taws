@@ -127,7 +127,8 @@ pub struct FieldMapping {
 
     /// Default value if source is null/missing
     #[serde(default)]
-    pub default: Option<String>,
+    pub default: Option<Value>,
+    //pub default: Option<String>,
 
     /// Optional transformation to apply
     /// Supported: "tags_to_map", "format_bytes", "format_epoch_millis", "bool_to_yes_no"
@@ -143,7 +144,7 @@ impl Default for FieldMapping {
     fn default() -> Self {
         Self {
             source: String::new(),
-            default: Some("-".to_string()),
+            default: Some(Value::String("-".to_string())),
             transform: None,
             array_item_path: None,
         }
@@ -257,6 +258,9 @@ pub struct EnrichCall {
     /// Default value if call fails
     #[serde(default)]
     pub default_value: Option<String>,
+    #[serde(default)]
+    pub request_params: Option<HashMap<String, String>>,
+
 }
 
 #[cfg(test)]

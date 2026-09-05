@@ -1,0 +1,71 @@
+{
+  "resources": {
+    "transfer-family-users": {
+      "display_name": "Transfer Family Users",
+      "service": "transfer",
+      "sdk_method": "list_users",
+      "sdk_method_params": {},
+      "response_path": "Users",
+      "visible_resource": false,
+      "id_field": "UserName",
+      "name_field": "UserName",
+
+      "columns": [
+        {
+          "header": "USERNAME",
+          "json_path": "UserName",
+          "width": 32
+        },
+        {
+          "header": "HOME DIRECTORY",
+          "json_path": "HomeDirectory",
+          "width": 50
+        },
+        {
+          "header": "ROLE",
+          "json_path": "Role",
+          "width": 50
+        },
+        {
+          "header": "POLICY",
+          "json_path": "Policy",
+          "width": 32
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+    
+      "api_config": {
+        "protocol": "json",
+        "action": "ListUsers",
+        "response_root": "/Users",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/NextToken",
+          "max_results_param": "MaxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "UserName": {
+          "source": "/UserName",
+          "default": "-"
+        },
+        "HomeDirectory": {
+          "source": "/HomeDirectory",
+          "default": "-"
+        },
+        "Role": {
+          "source": "/Role",
+          "default": "-"
+        },
+        "Policy": {
+          "source": "/Policy",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

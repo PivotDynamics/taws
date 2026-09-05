@@ -54,7 +54,14 @@
         }
       ],
 
-      "sub_resources": [],
+      "sub_resources": [{
+        "shortcut": "t",
+        "display_name": "Transit Gateway",
+        "resource_key": "transit-gateways",
+        "parent_id_field": "TransitGatewayId",
+        "filter_param": "transit-gateway-id",
+        "filter_type": "ec2_filter"
+      }],
 
       "actions": [],
 

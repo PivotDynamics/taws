@@ -1,0 +1,79 @@
+{
+  "resources": {
+    "route-tables": {
+      "display_name": "Route Tables",
+      "service": "ec2",
+      "sdk_method": "describe_route_tables",
+      "sdk_method_params": {},
+      "response_path": "routeTables",
+      "id_field": "RouteTableId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Tags.Name",
+          "width": 20
+        },
+        {
+          "header": "ROUTE TABLE ID",
+          "json_path": "RouteTableId",
+          "width": 28
+        },
+        {
+          "header": "VPC ID",
+          "json_path": "VpcId",
+          "width": 28
+        },
+        {
+          "header": "MAIN",
+          "json_path": "Associations.Main",
+          "width": 10,
+          "color_map": "bool"
+        }
+      ],
+
+      "sub_resources": [
+        {
+          "shortcut": "r",
+          "display_name": "Routes",
+          "resource_key": "routes",
+          "parent_id_field": "RouteTableId",
+          "filter_param": "route-table-id",
+          "filter_type": "ec2_filter"
+        }
+      ],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeRouteTables",
+        "response_root": "/DescribeRouteTablesResponse/routeTableSet/item"
+      },
+
+      "field_mappings": {
+        "RouteTableId": {
+          "source": "/routeTableId",
+          "default": "-"
+        },
+        "VpcId": {
+          "source": "/vpcId",
+          "default": "-"
+        },
+        "Associations": {
+          "source": "/associationSet/item"
+        },
+        "Tags": {
+          "source": "/tagSet/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "tag_filter": {
+        "enabled": true
+      }
+    }
+  }
+}

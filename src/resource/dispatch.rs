@@ -8,8 +8,10 @@
 //! API operations are configured in JSON files under src/resources/.
 //! Special cases (S3 objects, STS) have dedicated handlers.
 
+use super::path_extractor::{extract_by_path};
 use super::field_mapper::build_response;
 use super::handlers::get_protocol_handler;
+//use super::protocol::{ApiConfig, ApiProtocol, ListEnrichment};
 use super::protocol::{ApiConfig, ApiProtocol};
 use super::registry::get_resource;
 use crate::aws::client::AwsClients;
@@ -98,6 +100,7 @@ pub async fn invoke_list(
     resource_key: &str,
     clients: &AwsClients,
     params: &Value,
+    region_override: Option<&str>,
 ) -> Result<Value> {
     let resource_def =
         get_resource(resource_key).ok_or_else(|| anyhow!("Unknown resource: {}", resource_key))?;
@@ -143,11 +146,29 @@ pub async fn invoke_list(
                 )
                 .await?;
 
-            items.extend(parsed.items);
+            //items.extend(parsed.items);
+            for mut item in parsed.items {
+                if let Some(obj) = item.as_object_mut() {
+                    obj.insert(
+                        "Region".to_string(),
+                        Value::String(region.clone()),
+                    );
+                }
+
+                items.push(item);
+            }   
         }
 
         (items, None)
     } else {
+        let region = region_override.or(resource_def.region.as_deref());
+        debug!(
+            "Resource '{}' request region: override={:?}, resource_region={:?}, effective={:?}",
+            resource_key,
+            region_override,
+            resource_def.region.as_deref(),
+            region.unwrap_or(&clients.region)
+        );
         let parsed = handler
             .invoke(
                 clients,
@@ -155,18 +176,32 @@ pub async fn invoke_list(
                 api_config,
                 params,
                 &resource_def.field_mappings,
-                resource_def.region.as_deref(),
+                region,
             )
             .await?;
 
         (parsed.items, parsed.next_token)
     };
 
-    Ok(build_response(
+    /*Ok(build_response(
         items,
         &resource_def.response_path,
         next_token,
-    ))
+    ))*/
+    let response = build_response(
+        items,
+        &resource_def.response_path,
+        next_token,
+    );
+    tracing::debug!(
+        "invoke_list: resource='{}', response_path='{}', built_response={}",
+        resource_key,
+        resource_def.response_path,
+        serde_json::to_string_pretty(&response)?
+    );
+
+    Ok(response)
+
 }
 
 
@@ -785,14 +820,18 @@ debug!(
             clients,
             service,
             resource_id,
+            &result,
             enrich,
             &describe_config.protocol,
         )
         .await;
         match enrich_result {
             Ok(value) => {
-                if let Value::Object(ref mut map) = result {
+                /*if let Value::Object(ref mut map) = result {
                     map.insert(enrich.result_field.clone(), value);
+                }*/
+                if let Value::Object(ref mut map) = result {
+                  map.insert(enrich.result_field.clone(), value);
                 }
             }
             Err(_) => {
@@ -826,32 +865,75 @@ debug!(
     Ok(result)
 }
 
-/// Execute an enrichment call for describe
 async fn execute_enrich_call(
     clients: &AwsClients,
     service: &str,
     resource_id: &str,
+    item: &Value,
     enrich: &super::protocol::EnrichCall,
-    _protocol: &ApiProtocol,
+    protocol: &ApiProtocol,
 ) -> Result<Value> {
-    // For now, support REST-XML S3 style enrich calls
-    if let Some(ref path) = enrich.path {
-        let path = path.replace("{resource_id}", resource_id);
-        let method = enrich.method.as_deref().unwrap_or("GET");
+    let path = enrich
+        .path
+        .as_ref()
+        .ok_or_else(|| anyhow!("Enrich call requires path"))?
+        .replace("{resource_id}", resource_id);
 
-        let xml = clients
-            .http
-            .rest_xml_request(service, method, &path, None)
-            .await?;
-        let json = xml_to_json(&xml)?;
+    let method = enrich.method.as_deref().unwrap_or("GET");
 
-        if let Some(ref extract) = enrich.extract_path {
-            Ok(json.pointer(extract).cloned().unwrap_or(Value::Null))
-        } else {
-            Ok(json)
+    match protocol {
+        ApiProtocol::RestXml => {
+            let xml = clients
+                .http
+                .rest_xml_request(service, method, &path, None)
+                .await?;
+
+            let json = xml_to_json(&xml)?;
+
+            if let Some(ref extract) = enrich.extract_path {
+                Ok(json.pointer(extract).cloned().unwrap_or(Value::Null))
+            } else {
+                Ok(json)
+            }
         }
-    } else {
-        Err(anyhow!("Enrich call requires path"))
+
+        ApiProtocol::RestJson => {
+            let mut params = serde_json::Map::new();
+
+            if let Some(request_params) = &enrich.request_params {
+                for (param_name, source_path) in request_params {
+                    let value = extract_by_path(item, source_path);
+
+                    if !value.is_null() {
+                        params.insert(param_name.clone(), value);
+                    }
+                }
+            }
+
+            let body = if params.is_empty() {
+                None
+            } else {
+                Some(serde_json::to_string(&Value::Object(params))?)
+            };
+
+            let response = clients
+                .http
+                .rest_json_request(service, method, &path, body.as_deref())
+                .await?;
+
+            let json: Value = serde_json::from_str(&response)?;
+
+            if let Some(ref extract) = enrich.extract_path {
+                Ok(extract_by_path(&json, extract))
+            } else {
+                Ok(json)
+            }
+        }
+
+        _ => Err(anyhow!(
+            "Unsupported protocol for enrich call: {:?}",
+            protocol
+        )),
     }
 }
 

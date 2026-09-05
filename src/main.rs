@@ -455,7 +455,7 @@ where
 
     let (instances, initial_error) = {
         // Use the new JSON-driven resource system
-        match resource::fetch_resources_paginated("ec2-instances", &clients, &[], None).await {
+        match resource::fetch_resources_paginated("ec2-instances", &clients, &[], None, None).await {
             Ok(result) => (result.items, None),
             Err(e) => {
                 let error_msg = aws::client::format_aws_error(&e);
@@ -679,6 +679,7 @@ where
                                         "ec2-instances",
                                         &clients,
                                         &[],
+                                        None,
                                         None,
                                     )
                                     .await
@@ -1136,6 +1137,7 @@ where
                                         "ec2-instances",
                                         &clients,
                                         &[],
+                                        None,
                                         None,
                                     )
                                     .await

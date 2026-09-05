@@ -1,0 +1,88 @@
+{
+  "resources": {
+    "transit-gateway-attachments": {
+      "display_name": "Transit Gateway Attachments",
+      "visible_resource": false,
+      "service": "ec2",
+      "sdk_method": "describe_transit_gateway_attachments",
+      "sdk_method_params": {},
+      "response_path": "transit_gateway_attachments",
+      "id_field": "TransitGatewayAttachmentId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Tags.Name",
+          "width": 45
+        },
+        {
+          "header": "ATTACHMENT ID",
+          "json_path": "TransitGatewayAttachmentId",
+          "width": 30
+        },
+        {
+          "header": "RESOURCE TYPE",
+          "json_path": "ResourceType",
+          "width": 15
+        },
+        {
+          "header": "RESOURCE ID",
+          "json_path": "ResourceId",
+          "width": 30
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 15
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeTransitGatewayAttachments",
+        "response_root": "/DescribeTransitGatewayAttachmentsResponse/transitGatewayAttachments/item"
+      },
+
+      "field_mappings": {
+        "TransitGatewayAttachmentId": {
+          "source": "/transitGatewayAttachmentId",
+          "default": "-"
+        },
+        "TransitGatewayId": {
+          "source": "/transitGatewayId",
+          "default": "-"
+        },
+        "ResourceId": {
+          "source": "/resourceId",
+          "default": "-"
+        },
+        "ResourceType": {
+          "source": "/resourceType",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "ResourceOwnerId": {
+          "source": "/resourceOwnerId",
+          "default": "-"
+        },
+        "TransitGatewayOwnerId": {
+          "source": "/transitGatewayOwnerId",
+          "default": "-"
+        },
+        "CreationTime": {
+          "source": "/creationTime",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

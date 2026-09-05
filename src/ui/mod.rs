@@ -382,12 +382,18 @@ fn get_cell_style(value: &str, col: &ColumnDef) -> Style {
     Style::default()
 }
 
-/// Format cell value, adding indicators for transitional states
 fn format_cell_value(value: &str, col: &ColumnDef) -> String {
+    let display_value = col
+        .value_mappings
+        .as_ref()
+        .and_then(|mappings| mappings.get(value))
+        .map(String::as_str)
+        .unwrap_or(value);
+
     // Check if this is a state/status column with transitional states
     if col.color_map.is_some() {
-        let lower = value.to_lowercase();
-        // Transitional states get an arrow indicator
+        let lower = display_value.to_lowercase();
+
         if lower.contains("pending")
             || lower.contains("starting")
             || lower.contains("stopping")
@@ -401,10 +407,10 @@ fn format_cell_value(value: &str, col: &ColumnDef) -> String {
             || lower.contains("in-progress")
             || lower.contains("initializing")
         {
-            return format!("{} ↻", value);
+            return format!("{} ↻", display_value);
         }
     }
-    value.to_string()
+    display_value.to_string()
 }
 
 fn describe_title(resource_display_name: &str, action_display_name: Option<&str>) -> String {

@@ -1,0 +1,115 @@
+{
+  "resources": {
+    "transfer-family-sftp-servers": {
+      "display_name": "Transfer Family SFTP Servers",
+      "service": "transfer",
+      "target": "ListServers",
+      "sdk_method": "list_servers",
+      "sdk_method_params": {},
+      "response_path": "Servers",
+      "id_field": "ServerId",
+      "name_field": "ServerId",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "SERVER ID",
+          "json_path": "ServerId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "ENDPOINT",
+          "json_path": "EndpointType",
+          "width": 16
+        },
+        {
+          "header": "IDENTITY",
+          "json_path": "IdentityProviderType",
+          "width": 20
+        },
+        {
+          "header": "HOSTNAME",
+          "json_path": "EndpointDetails/VpcEndpointId",
+          "width": 28
+        }
+      ],
+
+      "sub_resources": [
+      {
+        "shortcut": "u",
+        "display_name": "Users",
+        "resource_key": "transfer-family-users",
+        "parent_id_field": "ServerId",
+        "filter_param": "ServerId",
+        "filter_type": "json_param"
+      },
+      {
+        "shortcut": "e",
+        "display_name": "Endpoint",
+        "resource_key": "transfer-family-sftp-endpoint",
+        "parent_id_field": "ServerId",
+        "filter_param": "ServerId",
+        "filter_type": "json_param"
+      }],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "ListServers",
+        "response_root": "/Servers",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/NextToken"
+        }
+      },
+
+      "field_mappings": {
+        "ServerId": {
+          "source": "/ServerId",
+          "default": "-"
+        },
+        "State": {
+          "source": "/State",
+          "default": "-"
+        },
+        "EndpointType": {
+          "source": "/EndpointType",
+          "default": "-"
+        },
+        "IdentityProviderType": {
+          "source": "/IdentityProviderType",
+          "default": "-"
+        },
+        "ServerArn": {
+          "source": "/Arn",
+          "default": "-"
+        },
+        "LoggingRole": {
+          "source": "/LoggingRole",
+          "default": "-"
+        },
+        "SecurityPolicyName": {
+          "source": "/SecurityPolicyName",
+          "default": "-"
+        },
+        "EndpointDetails": {
+          "source": "/EndpointDetails",
+          "default": "-"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeServer",
+        "id_param": "ServerId",
+        "response_path": "/Server"
+      }
+    }
+  }
+}

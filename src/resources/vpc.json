@@ -76,39 +76,6 @@
       "tag_filter": {
         "enabled": true
       }
-    },
-    "security-groups": {
-      "display_name": "Security Groups",
-      "service": "ec2",
-      "sdk_method": "describe_security_groups",
-      "sdk_method_params": {},
-      "response_path": "security_groups",
-      "id_field": "GroupId",
-      "name_field": "GroupName",
-      "is_global": false,
-      "columns": [
-        { "header": "NAME", "json_path": "GroupName", "width": 25 },
-        { "header": "GROUP ID", "json_path": "GroupId", "width": 24 },
-        { "header": "VPC ID", "json_path": "VpcId", "width": 24 },
-        { "header": "DESCRIPTION", "json_path": "Description", "width": 30 }
-      ],
-      "sub_resources": [],
-      "actions": [],
-      "api_config": {
-        "protocol": "query",
-        "action": "DescribeSecurityGroups",
-        "response_root": "/DescribeSecurityGroupsResponse/securityGroupInfo/item"
-      },
-      "field_mappings": {
-        "GroupId": { "source": "/groupId", "default": "-" },
-        "GroupName": { "source": "/groupName", "default": "-" },
-        "VpcId": { "source": "/vpcId", "default": "-" },
-        "Description": { "source": "/groupDescription", "default": "-" },
-        "OwnerId": { "source": "/ownerId", "default": "-" }
-      },
-      "tag_filter": {
-        "enabled": true
-      }
     }
   }
 }

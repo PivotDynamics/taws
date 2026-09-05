@@ -213,7 +213,14 @@
         { "header": "PUBLIC IP", "json_path": "PublicIpAddress", "width": 16 },
         { "header": "PRIVATE IP", "json_path": "PrivateIpAddress", "width": 16 }
       ],
-      "sub_resources": [],
+      "sub_resources": [{
+        "shortcut": "g",
+        "display_name": "Security Groups",
+        "resource_key": "security-groups",
+        "parent_id_field": "SecurityGroups",
+        "filter_param": "group-id",
+        "filter_type": "ec2_filter"
+      }],
       "actions": [
         { "key": "c", "display_name": "Connect (SSM)", "shortcut": "c", "sdk_method": "ssm_connect" },
         { "key": "s", "display_name": "Start", "shortcut": "s", "sdk_method": "start_instance", "confirm": { "message": "Start instance", "default_yes": false } },
@@ -241,7 +248,11 @@
         "PrivateIpAddress": { "source": "/privateIpAddress", "default": "-" },
         "LaunchTime": { "source": "/launchTime", "default": "-" },
         "Platform": { "source": "/platform", "default": "" },
-        "Tags": { "source": "/tagSet/item", "transform": "tags_to_map" }
+        "Tags": { "source": "/tagSet/item", "transform": "tags_to_map" },
+"SecurityGroups": {
+  "source": "/groupSet/item/groupId",
+  "default": []
+}
       },
       "action_configs": {
         "start_instance": {

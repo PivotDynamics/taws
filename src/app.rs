@@ -459,6 +459,111 @@ impl App {
         self.fetch_page(self.pagination.next_token.clone()).await
     }
 
+
+    fn extract_embedded_subresource(&self) -> Option<Vec<Value>> {
+        let parent = self.parent_context.as_ref()?;
+        let parent_resource = get_resource(&parent.resource_key)?;
+        let sub = parent_resource
+            .sub_resources
+            .iter()
+            .find(|s| s.resource_key == self.current_resource_key)?;
+
+        if sub.filter_type != "embedded" {
+            return None;
+        }
+
+        let field = &sub.parent_id_field;
+
+        tracing::debug!(
+            "EMBEDDED SUBRESOURCE: parent={} child={} field={}",
+                parent.resource_key,
+                self.current_resource_key,
+                field
+        );
+
+        let value = parent.item.get(field)?;
+    
+        tracing::debug!(
+            "EMBEDDED VALUE: field={} value={:?}",
+            field,
+            value
+        );
+
+        let item = value.get("item")?;
+    
+        match item {
+            Value::Array(items) => Some(items.clone()),
+            Value::Object(_) => Some(vec![item.clone()]),
+            Value::Null => Some(Vec::new()),
+
+            other => {
+                tracing::warn!(
+                    "EMBEDDED SUBRESOURCE: expected object or array at '{}.item', got {:?}",
+                    field,
+                    other
+                );
+                Some(Vec::new())
+            }
+        }
+    }
+
+    /// Get the region override for the current sub-resource.
+    ///
+    /// If the current resource is a sub-resource with
+    /// `region_field: "parent"`, use the Region field from the
+    /// parent item stored in ParentContext.
+    fn subresource_region_override(&self) -> Option<String> {
+        let parent = self.parent_context.as_ref()?;
+        let parent_resource = get_resource(&parent.resource_key)?;
+
+        let sub = parent_resource
+            .sub_resources
+            .iter()
+            .find(|s| s.resource_key == self.current_resource_key)?;
+
+        match sub.region_field.as_deref() {
+            Some("parent") => {
+                let region = parent
+                    .item
+                    .get("Region")
+                    .and_then(Value::as_str)
+                    .filter(|r| !r.is_empty() && *r != "-")
+                    .map(str::to_owned);
+
+                tracing::debug!(
+                    "SUBRESOURCE REGION: parent='{}', child='{}', region={:?}",
+                    parent.resource_key,
+                    self.current_resource_key,
+                    region
+                );
+
+                region
+            }
+
+            Some(field) => {
+                let region = parent
+                    .item
+                    .get(field)
+                    .and_then(Value::as_str)
+                    .filter(|r| !r.is_empty() && *r != "-")
+                    .map(str::to_owned);
+
+                tracing::debug!(
+                    "SUBRESOURCE REGION: parent='{}', child='{}', field='{}', region={:?}",
+                    parent.resource_key,
+                    self.current_resource_key,
+                    field,
+                    region
+                );
+
+                region
+            }
+
+            None => None,
+        }
+    }
+
+
     /// Fetch a specific page of resources
     async fn fetch_page(&mut self, page_token: Option<String>) -> Result<()> {
         if self.current_resource().is_none() && self.current_metric().is_none() {
@@ -472,17 +577,63 @@ impl App {
         self.loading = true;
         self.error_message = None;
 
+    if let Some(items) = self.extract_embedded_subresource() {
+        tracing::debug!(
+            "EMBEDDED RESOURCE: '{}' extracted {} items from parent",
+            self.current_resource_key,
+            items.len()
+        );
+
+        let prev_selected = self.selected;
+    
+        self.items = items;
+        self.apply_filter();
+    
+        // Embedded resources don't have AWS pagination.
+        self.pagination.has_more = false;
+        self.pagination.next_token = None;
+
+        if prev_selected < self.filtered_items.len() {
+            self.selected = prev_selected;
+        } else {
+            self.selected = 0;
+        }
+
+        self.loading = false;
+        self.mark_refreshed();
+
+        return Ok(());
+    }
+
+
+
         // Build filters from parent context
         let filters = self.build_filters_from_context();
 
+        let region_override = self.subresource_region_override();
+
+        
+        tracing::debug!(
+            "FETCH REGION: resource='{}', app_region='{}', override={:?}",
+            self.current_resource_key,
+            self.region,
+            region_override
+        );
         // Use paginated fetch - returns only one page of results
-        match fetch_resources_paginated(
+        /*match fetch_resources_paginated(
             &self.current_resource_key,
             &self.clients,
             &filters,
             page_token.as_deref(),
         )
-        .await
+        .await*/
+        match fetch_resources_paginated(
+            &self.current_resource_key,
+            &self.clients,
+            &filters,
+            page_token.as_deref(),
+            region_override.as_deref(),
+        ).await
         {
             Ok(result) => {
                 // Preserve selection if possible

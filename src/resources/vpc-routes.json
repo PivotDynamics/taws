@@ -1,0 +1,117 @@
+{
+  "resources": {
+    "routes": {
+      "display_name": "Routes",
+      "service": "ec2",
+      "sdk_method": "describe_route_tables",
+      "sdk_method_params": {},
+      "visible_resource": false,
+      "response_path": "Routes",
+      "id_field": "DestinationCidrBlock",
+      "name_field": "DestinationCidrBlock",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "DESTINATION",
+          "json_path": "DestinationCidrBlock",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 12,
+          "color_map": "state"
+        },
+        {
+          "header": "ORIGIN",
+          "json_path": "Origin",
+          "width": 18
+        },
+        {
+          "header": "GATEWAY ID",
+          "json_path": "GatewayId",
+          "width": 24
+        },
+        {
+          "header": "NAT GATEWAY ID",
+          "json_path": "NatGatewayId",
+          "width": 28
+        },
+        {
+          "header": "TRANSIT GATEWAY ID",
+          "json_path": "TransitGatewayId",
+          "width": 28
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeRouteTables",
+        "response_root": "/DescribeRouteTablesResponse/routeTableSet/item/routeSet/item",
+        "param_mapping": {
+          "route-table-id": "routeTableId"
+        }
+      },
+
+      "field_mappings": {
+        "DestinationCidrBlock": {
+          "source": "/destinationCidrBlock",
+          "default": "-"
+        },
+        "State": {
+          "source": "/state",
+          "default": "-"
+        },
+        "Origin": {
+          "source": "/origin",
+          "default": "-"
+        },
+        "GatewayId": {
+          "source": "/gatewayId",
+          "default": "-"
+        },
+        "NatGatewayId": {
+          "source": "/natGatewayId",
+          "default": "-"
+        },
+        "TransitGatewayId": {
+          "source": "/transitGatewayId",
+          "default": "-"
+        },
+        "NetworkInterfaceId": {
+          "source": "/networkInterfaceId",
+          "default": "-"
+        },
+        "VpcPeeringConnectionId": {
+          "source": "/vpcPeeringConnectionId",
+          "default": "-"
+        },
+        "EgressOnlyInternetGatewayId": {
+          "source": "/egressOnlyInternetGatewayId",
+          "default": "-"
+        },
+        "CarrierGatewayId": {
+          "source": "/carrierGatewayId",
+          "default": "-"
+        },
+        "LocalGatewayId": {
+          "source": "/localGatewayId",
+          "default": "-"
+        },
+        "CoreNetworkArn": {
+          "source": "/coreNetworkArn",
+          "default": "-"
+        },
+        "InstanceId": {
+          "source": "/instanceId",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

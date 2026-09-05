@@ -23,7 +23,15 @@
       ],
       "sub_resources": [
         { "shortcut": "l", "display_name": "Listeners", "resource_key": "elbv2-listeners", "parent_id_field": "LoadBalancerArn", "filter_param": "load_balancer_arn" },
-        { "shortcut": "t", "display_name": "Target Groups", "resource_key": "elbv2-target-groups", "parent_id_field": "LoadBalancerArn", "filter_param": "load_balancer_arn" }
+        { "shortcut": "t", "display_name": "Target Groups", "resource_key": "elbv2-target-groups", "parent_id_field": "LoadBalancerArn", "filter_param": "load_balancer_arn" },
+{
+  "shortcut": "g",
+  "display_name": "Security Groups",
+  "resource_key": "security-groups",
+  "parent_id_field": "SecurityGroups",
+  "filter_param": "group-id",
+  "filter_type": "ec2_filter"
+}
       ],
       "actions": [
         { "key": "ctrl+d", "display_name": "Delete Load Balancer", "shortcut": "ctrl+d", "sdk_method": "delete_load_balancer", "confirm": { "message": "Delete load balancer", "default_yes": false, "destructive": true } }
@@ -41,7 +49,9 @@
         "Scheme": { "source": "/Scheme", "default": "-" },
         "State": { "source": "/State/Code", "default": "-" },
         "VpcId": { "source": "/VpcId", "default": "-" },
-        "CreatedTime": { "source": "/CreatedTime", "default": "-" }
+        "CreatedTime": { "source": "/CreatedTime", "default": "-" },
+        "SecurityGroups": { "source": "/SecurityGroups/member"}
+
       },
       "action_configs": {
         "delete_load_balancer": {

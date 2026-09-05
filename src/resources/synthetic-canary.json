@@ -1,0 +1,151 @@
+{
+  "resources": {
+    "synthetic-canaries": {
+      "display_name": "Synthetics Canaries",
+      "service": "synthetics",
+      "sdk_method": "DescribeCanaries",
+      "response_path": "/Canaries",
+      "id_field": "Id",
+      "name_field": "Name",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "Name",
+          "width": 40
+        },
+        {
+          "header": "STATE",
+          "json_path": "State",
+          "width": 15,
+          "color_map": "state"
+        },
+        {
+          "header": "RUNTIME",
+          "json_path": "RuntimeVersion",
+          "width": 28
+        },
+        {
+          "header": "SCHEDULE",
+          "json_path": "Schedule.Expression",
+          "width": 25
+        }
+      ],
+
+      "sub_resources": [
+        {
+          "shortcut": "l",
+          "display_name": "Last Run",
+          "resource_key": "synthetic-canaries-last-run",
+          "parent_id_field": "Name",
+          "filter_param": "Names",
+          "filter_type": "rest_json"
+        }
+      ],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "rest-json",
+        "method": "POST",
+        "path": "/canaries",
+        "response_root": "/Canaries",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/NextToken",
+          "max_results_param": "MaxResults",
+          "max_results": 20
+        }
+      },
+
+      "field_mappings": {
+        "Name": {
+          "source": "/Name",
+          "default": "-"
+        },
+        "State": {
+          "source": "/Status/State",
+          "default": "-"
+        },
+        "RuntimeVersion": {
+          "source": "/RuntimeVersion",
+          "default": "-"
+        },
+        "Schedule": {
+          "source": "/Schedule/Expression",
+          "default": "-"
+        }
+      }
+    },
+
+    "synthetic-canaries-last-run": {
+      "display_name": "Canary Last Run",
+      "service": "synthetics",
+      "sdk_method": "DescribeCanariesLastRun",
+      "response_path": "/CanariesLastRun",
+      "id_field": "CanaryName",
+      "name_field": "CanaryName",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "CANARY",
+          "json_path": "CanaryName",
+          "width": 40
+        },
+        {
+          "header": "STATE",
+          "json_path": "LastRun.Status.State",
+          "width": 15,
+          "color_map": "state"
+        },
+        {
+          "header": "TEST RESULT",
+          "json_path": "LastRun.Status.TestResult",
+          "width": 15
+        },
+        {
+          "header": "STARTED",
+          "json_path": "LastRun.Timeline.Started",
+          "width": 25
+        },
+        {
+          "header": "COMPLETED",
+          "json_path": "LastRun.Timeline.Completed",
+          "width": 25
+        },
+        {
+          "header": "ERROR",
+          "json_path": "LastRun.Status.StateReason",
+          "width": 50
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "rest-json",
+        "method": "POST",
+        "path": "/canaries/last-run",
+        "response_root": "/CanariesLastRun",
+        "param_mapping": {
+          "Names": "Names"
+        }
+      },
+
+      "field_mappings": {
+        "CanaryName": {
+          "source": "/CanaryName",
+          "default": "-"
+        },
+        "LastRun": {
+          "source": "/LastRun",
+          "default": {}
+        }
+      }
+    }
+  }
+}

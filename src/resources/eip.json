@@ -1,0 +1,138 @@
+{
+  "resources": {
+    "elastic-ips": {
+      "display_name": "Elastic IPs",
+      "service": "ec2",
+      "sdk_method": "describe_addresses",
+      "sdk_method_params": {},
+      "response_path": "addresses",
+      "id_field": "AllocationId",
+      "cross_region": false,
+      "region_field": "Region",
+      "name_field": "PublicIp",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "PUBLIC IP",
+          "json_path": "PublicIp",
+          "width": 18
+        },
+        {
+          "header": "ALLOCATION ID",
+          "json_path": "AllocationId",
+          "width": 28
+        },
+        {
+          "header": "ASSOCIATION ID",
+          "json_path": "AssociationId",
+          "width": 28
+        },
+        {
+          "header": "INSTANCE ID",
+          "json_path": "InstanceId",
+          "width": 22
+        },
+        {
+          "header": "NETWORK INTERFACE",
+          "json_path": "NetworkInterfaceId",
+          "width": 24
+        },
+        {
+          "header": "PRIVATE IP",
+          "json_path": "PrivateIpAddress",
+          "width": 18
+        },
+        {
+          "header": "DOMAIN",
+          "json_path": "Domain",
+          "width": 10
+        },
+        {
+          "header": "REGION",
+          "json_path": "Region",
+          "width": 18
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeAddresses",
+        "response_root": "/DescribeAddressesResponse/addressesSet/item",
+        "pagination": {
+          "input_token": "NextToken",
+          "output_token": "/DescribeAddressesResponse/nextToken"
+        }
+      },
+
+      "field_mappings": {
+        "AllocationId": {
+          "source": "/allocationId",
+          "default": "-"
+        },
+        "AssociationId": {
+          "source": "/associationId",
+          "default": "-"
+        },
+        "PublicIp": {
+          "source": "/publicIp",
+          "default": "-"
+        },
+        "InstanceId": {
+          "source": "/instanceId",
+          "default": "-"
+        },
+        "NetworkInterfaceId": {
+          "source": "/networkInterfaceId",
+          "default": "-"
+        },
+        "PrivateIpAddress": {
+          "source": "/privateIpAddress",
+          "default": "-"
+        },
+        "Domain": {
+          "source": "/domain",
+          "default": "-"
+        },
+        "NetworkBorderGroup": {
+          "source": "/networkBorderGroup",
+          "default": "-"
+        },
+        "PublicIpv4Pool": {
+          "source": "/publicIpv4Pool",
+          "default": "-"
+        },
+        "NetworkInterfaceOwnerId": {
+          "source": "/networkInterfaceOwnerId",
+          "default": "-"
+        },
+        "CustomerOwnedIp": {
+          "source": "/customerOwnedIp",
+          "default": "-"
+        },
+        "CustomerOwnedIpv4Pool": {
+          "source": "/customerOwnedIpv4Pool",
+          "default": "-"
+        },
+        "CarrierIp": {
+          "source": "/carrierIp",
+          "default": "-"
+        },
+        "Region": {
+          "source": "/networkBorderGroup",
+          "default": "-"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "query",
+        "action": "DescribeAddresses",
+        "id_param": "AllocationIds",
+        "response_path": "/DescribeAddressesResponse/addressesSet/item"
+      }
+    }
+  }
+}

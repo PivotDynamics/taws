@@ -1,0 +1,135 @@
+{
+  "resources": {
+    "vpc": {
+      "display_name": "VPCs",
+      "service": "ec2",
+      "sdk_method": "describe_vpcs",
+      "sdk_method_params": {},
+      "response_path": "vpcs",
+      "id_field": "VpcId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+      "columns": [
+        { "header": "NAME", "json_path": "Tags.Name", "width": 20 },
+        { "header": "VPC ID", "json_path": "VpcId", "width": 24 },
+        { "header": "STATE", "json_path": "State", "width": 12, "color_map": "state" },
+        { "header": "CIDR", "json_path": "CidrBlock", "width": 18 },
+        { "header": "DEFAULT", "json_path": "IsDefault", "width": 10, "color_map": "bool" },
+        { "header": "TENANCY", "json_path": "InstanceTenancy", "width": 12 }
+      ],
+      "sub_resources": [
+        { "shortcut": "s", "display_name": "Subnets", "resource_key": "subnets", "parent_id_field": "VpcId", "filter_param": "vpc-id", "filter_type": "ec2_filter" },
+        { "shortcut": "g", "display_name": "Security Groups", "resource_key": "security-groups", "parent_id_field": "VpcId", "filter_param": "vpc-id", "filter_type": "ec2_filter" }
+      ],
+      "actions": [],
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeVpcs",
+        "response_root": "/DescribeVpcsResponse/vpcSet/item"
+      },
+      "field_mappings": {
+        "VpcId": { "source": "/vpcId", "default": "-" },
+        "State": { "source": "/state", "default": "-" },
+        "CidrBlock": { "source": "/cidrBlock", "default": "-" },
+        "IsDefault": { "source": "/isDefault", "transform": "bool_to_yes_no" },
+        "InstanceTenancy": { "source": "/instanceTenancy", "default": "-" },
+        "Tags": { "source": "/tagSet/item", "transform": "tags_to_map" }
+      },
+      "tag_filter": {
+        "enabled": true
+      }
+    },
+    "subnets": {
+      "display_name": "Subnets",
+      "service": "ec2",
+      "sdk_method": "describe_subnets",
+      "sdk_method_params": {},
+      "response_path": "subnets",
+      "id_field": "SubnetId",
+      "name_field": "Tags.Name",
+      "is_global": false,
+      "columns": [
+        { "header": "NAME", "json_path": "Tags.Name", "width": 20 },
+        { "header": "SUBNET ID", "json_path": "SubnetId", "width": 26 },
+        { "header": "STATE", "json_path": "State", "width": 12, "color_map": "state" },
+        { "header": "VPC ID", "json_path": "VpcId", "width": 24 },
+        { "header": "CIDR", "json_path": "CidrBlock", "width": 18 },
+        { "header": "AZ", "json_path": "AvailabilityZone", "width": 14 },
+        { "header": "AVAILABLE IPs", "json_path": "AvailableIpAddressCount", "width": 14 }
+      ],
+      "sub_resources": [],
+      "actions": [],
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeSubnets",
+        "response_root": "/DescribeSubnetsResponse/subnetSet/item"
+      },
+      "field_mappings": {
+        "SubnetId": { "source": "/subnetId", "default": "-" },
+        "VpcId": { "source": "/vpcId", "default": "-" },
+        "State": { "source": "/state", "default": "-" },
+        "CidrBlock": { "source": "/cidrBlock", "default": "-" },
+        "AvailabilityZone": { "source": "/availabilityZone", "default": "-" },
+        "AvailableIpAddressCount": { "source": "/availableIpAddressCount", "default": "0" },
+        "Tags": { "source": "/tagSet/item", "transform": "tags_to_map" }
+      },
+      "tag_filter": {
+        "enabled": true
+      }
+    },
+    "security-groups": {
+      "display_name": "Security Groups",
+      "service": "ec2",
+      "sdk_method": "describe_security_groups",
+      "sdk_method_params": {},
+      "response_path": "security_groups",
+      "id_field": "GroupId",
+      "name_field": "GroupName",
+      "is_global": false,
+      "columns": [
+        { "header": "NAME", "json_path": "GroupName", "width": 25 },
+        { "header": "GROUP ID", "json_path": "GroupId", "width": 24 },
+        { "header": "VPC ID", "json_path": "VpcId", "width": 24 },
+        { "header": "DESCRIPTION", "json_path": "Description", "width": 30 }
+      ],
+      "sub_resources": [
+  {
+    "shortcut": "i",
+    "display_name": "Ingress Rules",
+    "resource_key": "security-group-ingress",
+    "parent_id_field": "IpPermissions",
+    "parent_id_path": "",
+    "filter_param": "",
+    "filter_type": "embedded"
+  },
+  {
+    "shortcut": "e",
+    "display_name": "Egress Rules",
+    "resource_key": "security-group-egress",
+    "parent_id_field": "IpPermissionsEgress",
+    "parent_id_path": "",
+    "filter_param": "",
+    "filter_type": "embedded"
+  }
+      ],
+      "actions": [],
+      "api_config": {
+        "protocol": "query",
+        "action": "DescribeSecurityGroups",
+        "response_root": "/DescribeSecurityGroupsResponse/securityGroupInfo/item"
+      },
+      "field_mappings": {
+        "GroupId": { "source": "/groupId", "default": "-" },
+        "GroupName": { "source": "/groupName", "default": "-" },
+        "VpcId": { "source": "/vpcId", "default": "-" },
+        "Description": { "source": "/groupDescription", "default": "-" },
+        "OwnerId": { "source": "/ownerId", "default": "-" },
+        "IpPermissions": { "source": "/ipPermissions", "default": [] },
+        "IpPermissionsEgress": { "source": "/ipPermissionsEgress", "default": [] }
+      },
+      "tag_filter": {
+        "enabled": true
+      }
+    }
+  }
+}

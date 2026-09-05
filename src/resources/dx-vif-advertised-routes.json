@@ -1,0 +1,109 @@
+{
+  "resources": {
+    "direct-connect-vif-advertised-routes": {
+      "display_name": "Advertised Routes",
+      "service": "directconnect",
+      "sdk_method": "list_virtual_interface_routes",
+      "sdk_method_params": {
+        "filters": {
+          "routeDirection": "advertised"
+        }
+      },
+      "visible_resource": false,
+      "response_path": "routes",
+      "id_field": "Cidr",
+      "name_field": "Cidr",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "PREFIX",
+          "json_path": "Cidr",
+          "width": 24
+        },
+        {
+          "header": "ADDRESS FAMILY",
+          "json_path": "AddressFamily",
+          "width": 18
+        },
+        {
+          "header": "AS PATH",
+          "json_path": "AsPath",
+          "width": 30
+        },
+        {
+          "header": "COMMUNITIES",
+          "json_path": "Communities",
+          "width": 30
+        },
+        {
+          "header": "DEVICE",
+          "json_path": "AwsLogicalDeviceId",
+          "width": 30
+        },
+        {
+          "header": "INSTALLED",
+          "json_path": "RouteInstalledAt",
+          "width": 24
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "ListVirtualInterfaceRoutes",
+        "response_root": "/routes",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "Cidr": {
+          "source": "/cidr",
+          "default": "-"
+        },
+        "RouteDirection": {
+          "source": "/routeDirection",
+          "default": "-"
+        },
+        "AddressFamily": {
+          "source": "/addressFamily",
+          "default": "-"
+        },
+        "AsPath": {
+          "source": "/asPath",
+          "default": []
+        },
+        "Communities": {
+          "source": "/communities",
+          "default": []
+        },
+        "AwsLogicalDeviceId": {
+          "source": "/awsLogicalDeviceId",
+          "default": "-"
+        },
+        "RouteInstalledAt": {
+          "source": "/routeInstalledAt",
+          "default": "-"
+        },
+        "VirtualInterfaceId": {
+          "source": "/virtualInterfaceId",
+          "default": "-"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "ListVirtualInterfaceRoutes",
+        "id_param": "virtualInterfaceId",
+        "response_path": "/routes/0"
+      }
+    }
+  }
+}

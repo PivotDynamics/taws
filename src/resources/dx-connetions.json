@@ -45,8 +45,16 @@
           "width": 12
         }
       ],
+     "sub_resources": [
+        {
+          "shortcut": "v",
+          "display_name": "Virtual Interfaces",
+          "resource_key": "direct-connect-virtual-interfaces",
+          "parent_id_field": "ConnectionId",
+          "filter_param": "connectionId",
+          "filter_type": "directconnect_filter"
+        }],
 
-      "sub_resources": [],
       "actions": [],
 
       "api_config": {

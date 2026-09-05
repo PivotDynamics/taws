@@ -1,0 +1,67 @@
+{
+  "resources": {
+    "transfer-family-sftp-endpoint": {
+      "display_name": "Transfer Family SFTP Endpoint",
+      "service": "transfer",
+      "sdk_method": "describe_server",
+      "sdk_method_params": {},
+      "response_path": "Server",
+      "visible_resource": false,
+      "id_field": "VpcEndpointId",
+      "name_field": "VpcEndpointId",
+
+      "columns": [
+        {
+          "header": "VPC ENDPOINT ID",
+          "json_path": "VpcEndpointId",
+          "width": 24
+        },
+        {
+          "header": "VPC ID",
+          "json_path": "VpcId",
+          "width": 24
+        },
+        {
+          "header": "SUBNETS",
+          "json_path": "SubnetIds",
+          "width": 45
+        },
+        {
+          "header": "ELASTIC IPS",
+          "json_path": "AddressAllocationIds",
+          "width": 45
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeServer",
+        "response_root": "/Server"
+      },
+
+      "field_mappings": {
+        "VpcEndpointId": {
+          "source": "/EndpointDetails/VpcEndpointId",
+          "default": "-"
+        },
+        "VpcId": {
+          "source": "/EndpointDetails/VpcId",
+          "default": "-"
+        },
+        "SubnetIds": {
+          "source": "/EndpointDetails/SubnetIds",
+          "transform": "array_to_string",
+          "default": "-"
+        },
+        "AddressAllocationIds": {
+          "source": "/EndpointDetails/AddressAllocationIds",
+          "transform": "array_to_string",
+          "default": "-"
+        }
+      }
+    }
+  }
+}

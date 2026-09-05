@@ -1,0 +1,147 @@
+{
+  "resources": {
+    "direct-connect-connections": {
+      "display_name": "Direct Connect Connections",
+      "service": "directconnect",
+      "sdk_method": "describe_connections",
+      "sdk_method_params": {},
+      "response_path": "connections",
+      "id_field": "ConnectionId",
+      "cross_region": true,
+      "region_field": "Region",
+      "name_field": "ConnectionName",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "ConnectionName",
+          "width": 32
+        },
+        {
+          "header": "ID",
+          "json_path": "ConnectionId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "ConnectionState",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "LOCATION",
+          "json_path": "Region",
+          "width": 32
+        },
+        {
+          "header": "BANDWIDTH",
+          "json_path": "Bandwidth",
+          "width": 14
+        },
+        {
+          "header": "TYPE",
+          "json_path": "ConnectionType",
+          "width": 12
+        }
+      ],
+
+      "sub_resources": [],
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeConnections",
+        "response_root": "/connections",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "ConnectionId": {
+          "source": "/connectionId",
+          "default": "-"
+        },
+        "ConnectionName": {
+          "source": "/connectionName",
+          "default": "-"
+        },
+        "ConnectionState": {
+          "source": "/connectionState",
+          "default": "-"
+        },
+        "Location": {
+          "source": "/location",
+          "default": "-"
+        },
+        "Bandwidth": {
+          "source": "/bandwidth",
+          "default": "-"
+        },
+        "ConnectionType": {
+          "source": "/connectionType",
+          "default": "-"
+        },
+        "ConnectionArn": {
+          "source": "/connectionArn",
+          "default": "-"
+        },
+        "AwsDevice": {
+          "source": "/awsDevice",
+          "default": "-"
+        },
+        "AwsDeviceV2": {
+          "source": "/awsDeviceV2",
+          "default": "-"
+        },
+        "AwsLogicalDeviceId": {
+          "source": "/awsLogicalDeviceId",
+          "default": "-"
+        },
+        "OwnerAccount": {
+          "source": "/ownerAccount",
+          "default": "-"
+        },
+        "Vlan": {
+          "source": "/vlan",
+          "default": "-"
+        },
+        "PartnerName": {
+          "source": "/partnerName",
+          "default": "-"
+        },
+        "ProviderName": {
+          "source": "/providerName",
+          "default": "-"
+        },
+        "LagId": {
+          "source": "/lagId",
+          "default": "-"
+        },
+        "Region": {
+          "source": "/region",
+          "default": "-"
+        },
+        "EncryptionMode": {
+          "source": "/encryptionMode",
+          "default": "-"
+        },
+        "Tags": {
+          "source": "/tags/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeConnections",
+        "id_param": "connectionId",
+        "response_path": "/connections/0"
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "resources": {
+    "direct-connect-gateway-attachments": {
+      "display_name": "Connection Attachments",
+      "service": "directconnect",
+      "sdk_method": "describe_direct_connect_gateway_attachments",
+      "sdk_method_params": {},
+      "response_path": "direct_connect_gateway_attachments",
+      "id_field": "VirtualInterfaceId",
+      "name_field": "VirtualInterfaceId",
+      "is_global": true,
+      "requires_parent": true,
+
+      "columns": [
+        {
+          "header": "VIF ID",
+          "json_path": "VirtualInterfaceId",
+          "width": 24
+        },
+        {
+          "header": "REGION",
+          "json_path": "VirtualInterfaceRegion",
+          "width": 16
+        },
+        {
+          "header": "AWS ACCOUNT",
+          "json_path": "VirtualInterfaceOwnerAccount",
+          "width": 18
+        },
+        {
+          "header": "TYPE",
+          "json_path": "AttachmentType",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "AttachmentState",
+          "width": 14,
+          "color_map": "state"
+        }
+      ],
+
+      "sub_resources": [],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGatewayAttachments",
+        "response_root": "/directConnectGatewayAttachments",
+        "pagination": {
+          "input_token": "nextToken",
+          "output_token": "/nextToken",
+          "max_results_param": "maxResults",
+          "max_results": 100
+        }
+      },
+
+      "field_mappings": {
+        "DirectConnectGatewayId": {
+          "source": "/directConnectGatewayId",
+          "default": "-"
+        },
+        "VirtualInterfaceId": {
+          "source": "/virtualInterfaceId",
+          "default": "-"
+        },
+        "VirtualInterfaceRegion": {
+          "source": "/virtualInterfaceRegion",
+          "default": "-"
+        },
+        "VirtualInterfaceOwnerAccount": {
+          "source": "/virtualInterfaceOwnerAccount",
+          "default": "-"
+        },
+        "AttachmentState": {
+          "source": "/attachmentState",
+          "default": "-"
+        },
+        "AttachmentType": {
+          "source": "/attachmentType",
+          "default": "-"
+        },
+        "StateChangeError": {
+          "source": "/stateChangeError",
+          "default": "-"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeDirectConnectGatewayAttachments",
+        "id_param": "virtualInterfaceId",
+        "response_path": "/directConnectGatewayAttachments"
+      }
+    }
+  }
+}

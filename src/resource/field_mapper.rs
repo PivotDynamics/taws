@@ -36,11 +36,12 @@ pub fn apply_field_mappings(item: &Value, mappings: &HashMap<String, FieldMappin
 
         // Apply default if value is null
         let value = if value.is_null() {
-            mapping
+                mapping.default.clone().unwrap_or(Value::String("-".to_string()))
+       /*     mapping
                 .default
                 .as_ref()
                 .map(|d| Value::String(d.clone()))
-                .unwrap_or(Value::String("-".to_string()))
+                .unwrap_or(Value::String("-".to_string()))*/
         } else {
             // Convert non-string values to strings for consistency
             match value {
@@ -132,11 +133,75 @@ fn apply_transform(value: &Value, transform: &str) -> Value {
         "route53_record_id" => transform_route53_record_id(value),
         "array_length" => transform_array_length(value),
         "tunnel_status_summary" => transform_tunnel_status_summary(value),
+        "array_to_string" => transform_array_to_string(value),
         _ if transform.starts_with("first_item_field:") => {
             transform_first_item_field(value, transform)
         }
         _ => value.clone(),
     }
+}
+
+pub fn transform_array_to_string(value: &Value) -> Value {
+    tracing::debug!(
+        "transform_array_to_string: input={:#?}",
+        value
+    );
+
+    let result = match value {
+        Value::Array(arr) => {
+            tracing::debug!(
+                "transform_array_to_string: array length={}",
+                arr.len()
+            );
+
+            if arr.is_empty() {
+                Value::String("-".to_string())
+            } else {
+                let values: Vec<String> = arr
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect();
+
+                tracing::debug!(
+                    "transform_array_to_string: extracted values={:?}",
+                    values
+                );
+
+                if values.is_empty() {
+                    Value::String("-".to_string())
+                } else {
+                    Value::String(values.join(", "))
+                }
+            }
+        }
+        Value::String(s) => {
+            tracing::debug!(
+                "transform_array_to_string: received string='{}'",
+                s
+            );
+            value.clone()
+        }
+        Value::Null => {
+            tracing::debug!(
+                "transform_array_to_string: received null"
+            );
+            Value::String("-".to_string())
+        }
+        _ => {
+            tracing::debug!(
+                "transform_array_to_string: unexpected type={:?}",
+                value
+            );
+            Value::String("-".to_string())
+        }
+    };
+
+    tracing::debug!(
+        "transform_array_to_string: result={:#?}",
+        result
+    );
+
+    result
 }
 
 /// Transform Route53 record to unique ID (Name#Type)
@@ -308,6 +373,10 @@ pub fn transform_array_to_csv(value: &Value) -> Value {
         _ => value.clone(),
     }
 }
+
+
+
+
 
 /// Extract first item from array
 pub fn transform_first_item(value: &Value) -> Value {

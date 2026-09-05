@@ -1,0 +1,168 @@
+{
+  "resources": {
+    "direct-connect-virtual-interfaces": {
+      "display_name": "Virtual Interfaces",
+      "service": "directconnect",
+      "sdk_method": "describe_virtual_interfaces",
+      "sdk_method_params": {},
+      "response_path": "virtualInterfaces",
+      "id_field": "VirtualInterfaceId",
+      "name_field": "VirtualInterfaceName",
+      "visible_resource": false,
+
+      "cross_region": true,
+      "region_field": "Region",
+      "is_global": false,
+
+      "columns": [
+        {
+          "header": "NAME",
+          "json_path": "VirtualInterfaceName",
+          "width": 32
+        },
+        {
+          "header": "ID",
+          "json_path": "VirtualInterfaceId",
+          "width": 24
+        },
+        {
+          "header": "STATE",
+          "json_path": "VirtualInterfaceState",
+          "width": 14,
+          "color_map": "state"
+        },
+        {
+          "header": "TYPE",
+          "json_path": "VirtualInterfaceType",
+          "width": 12
+        },
+        {
+          "header": "VLAN",
+          "json_path": "Vlan",
+          "width": 10
+        },
+        {
+          "header": "ASN",
+          "json_path": "Asn",
+          "width": 12
+        },
+        {
+          "header": "ADDRESS FAMILY",
+          "json_path": "AddressFamily",
+          "width": 16
+        }
+      ],
+
+      "sub_resources": [
+        {
+          "shortcut": "a",
+          "display_name": "Accepted Routes",
+          "resource_key": "direct-connect-vif-accepted-routes",
+          "parent_id_field": "VirtualInterfaceId",
+          "filter_param": "virtualInterfaceId",
+          "filter_type": "directconnect_filter",
+          "region_field": "parent"
+        },
+        {
+          "shortcut": "r",
+          "display_name": "Advertised Routes",
+          "resource_key": "direct-connect-vif-advertised-routes",
+          "parent_id_field": "VirtualInterfaceId",
+          "filter_param": "virtualInterfaceId",
+          "filter_type": "directconnect_filter",
+          "region_field": "parent"
+        }
+      ],
+
+      "actions": [],
+
+      "api_config": {
+        "protocol": "json",
+        "action": "DescribeVirtualInterfaces",
+        "response_root": "/virtualInterfaces"
+      },
+
+      "field_mappings": {
+        "VirtualInterfaceId": {
+          "source": "/virtualInterfaceId",
+          "default": "-"
+        },
+        "VirtualInterfaceName": {
+          "source": "/virtualInterfaceName",
+          "default": "-"
+        },
+        "VirtualInterfaceState": {
+          "source": "/virtualInterfaceState",
+          "default": "-"
+        },
+        "VirtualInterfaceType": {
+          "source": "/virtualInterfaceType",
+          "default": "-"
+        },
+        "ConnectionId": {
+          "source": "/connectionId",
+          "default": "-"
+        },
+        "VirtualGatewayId": {
+          "source": "/virtualGatewayId",
+          "default": "-"
+        },
+        "DirectConnectGatewayId": {
+          "source": "/directConnectGatewayId",
+          "default": "-"
+        },
+        "Vlan": {
+          "source": "/vlan",
+          "default": "-"
+        },
+        "Asn": {
+          "source": "/asn",
+          "default": "-"
+        },
+        "AmazonAddress": {
+          "source": "/amazonAddress",
+          "default": "-"
+        },
+        "CustomerAddress": {
+          "source": "/customerAddress",
+          "default": "-"
+        },
+        "AddressFamily": {
+          "source": "/addressFamily",
+          "default": "-"
+        },
+        "Region": {
+          "source": "/region",
+          "default": "-"
+        },
+        "SiteLinkEnabled": {
+          "source": "/siteLinkEnabled",
+          "default": "-"
+        },
+        "JumboFrameCapable": {
+          "source": "/jumboFrameCapable",
+          "default": "-"
+        },
+        "AuthKey": {
+          "source": "/authKey",
+          "default": "-"
+        },
+        "RouteFilterPrefixes": {
+          "source": "/routeFilterPrefixes",
+          "default": []
+        },
+        "Tags": {
+          "source": "/tags/item",
+          "transform": "tags_to_map"
+        }
+      },
+
+      "describe_config": {
+        "protocol": "json",
+        "action": "DescribeVirtualInterfaces",
+        "id_param": "virtualInterfaceId",
+        "response_path": "/virtualInterfaces/0"
+      }
+    }
+  }
+}

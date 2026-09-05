@@ -14,6 +14,7 @@ use serde_json::Value;
 use crate::aws::http::xml_to_json;
 
 
+
 /// Filter for fetching resources (used for sub-resource filtering)
 #[derive(Debug, Clone, Default)]
 pub struct ResourceFilter {
@@ -60,12 +61,22 @@ pub async fn fetch_resources_paginated(
     clients: &AwsClients,
     filters: &[ResourceFilter],
     page_token: Option<&str>,
+    region_override: Option<&str>,
 ) -> Result<PaginatedResult> {
     // 1. Look up resource definition from JSON
     tracing::debug!(
         "fetch_resources_paginated: resource_key='{}', filters={:?}",
         resource_key,
         filters
+    );
+    tracing::debug!(
+        "========== FETCH START ==========\n\
+         resource_key={}\n\
+         filters={:?}\n\
+         page_token={:?}",
+        resource_key,
+        filters,
+        page_token
     );
 
     let resource_exists = get_resource(resource_key).is_some();
@@ -194,10 +205,15 @@ pub async fn fetch_resources_paginated(
             map.insert("_page_token".to_string(), Value::String(token.to_string()));
         }
     }
+    tracing::debug!(
+        "FETCH: calling invoke_list for resource='{}'",
+        resource_key
+    );
+
 
     // 3. Call SDK dispatcher - use new data-driven dispatch if api_config is defined
     let response = if resource_def.has_api_config() {
-        invoke_list(resource_key, clients, &params).await?
+        invoke_list(resource_key, clients, &params, region_override).await?
     } else {
         // Legacy path: use old sdk_dispatch
         invoke_sdk(
@@ -209,7 +225,25 @@ pub async fn fetch_resources_paginated(
         .await?
     };
 
+    tracing::debug!(
+        "FETCH: before extract_items resource='{}', response_path='{}'",
+        resource_key,
+        resource_def.response_path
+    );
+
     let mut response = response;
+        tracing::debug!(
+        "FETCH RESPONSE DEBUG: resource='{}', response keys={:?}",
+        resource_key,
+        response.as_object()
+            .map(|m| m.keys().collect::<Vec<_>>())
+    );
+
+    tracing::debug!(
+        "FETCH RESPONSE DEBUG: resource='{}', response={}",
+        resource_key,
+        serde_json::to_string_pretty(&response).unwrap_or_else(|_| "<invalid json>".to_string())
+    );
   
     if resource_key == "elbv2-load-balancers" && !filters.is_empty() {
         let tag_filters: Vec<(&str, &Vec<String>)> = filters
