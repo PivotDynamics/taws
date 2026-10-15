@@ -434,6 +434,29 @@ pub async fn invoke_sdk(
             Ok(json!({ "identity": [identity] }))
         }
 
+("cloudwatchlogs", "describe_log_streams") => {
+    let log_group = extract_param(params, "log_group_name");
+
+    if log_group.is_empty() {
+        return Err(anyhow!("Log group name required"));
+    }
+
+    let request = json!({
+        "logGroupName": log_group,
+        "orderBy": "LastEventTime",
+        "descending": true,
+        "limit": 50
+    });
+
+    let response = clients
+        .http
+        .json_request("logs", "DescribeLogStreams", &request.to_string())
+        .await?;
+
+    let json: Value = serde_json::from_str(&response)?;
+
+    Ok(json)
+}
         // CloudWatch Logs - tail_logs (streaming operation)
         ("cloudwatchlogs", "tail_logs") => {
             let log_group = extract_param(params, "log_group_name");
@@ -506,6 +529,91 @@ pub async fn invoke_sdk(
             Ok(json)
         }
 
+// CloudWatch Logs Insights - start_query
+// CloudWatch Logs Insights - start_query
+("cloudwatchlogs", "start_query") => {
+    let query_string = params
+        .get("query_string")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    if query_string.is_empty() {
+        return Err(anyhow!("Query string required"));
+    }
+
+    let log_group_names = params
+        .get("log_group_names")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let has_source = query_string
+        .trim_start()
+        .starts_with("SOURCE ");
+
+    if !has_source && log_group_names.is_empty() {
+        return Err(anyhow!("At least one log group required"));
+    }
+
+    let start_time = params
+        .get("start_time")
+        .and_then(|v| v.as_i64())
+        .ok_or_else(|| anyhow!("Start time required"))?;
+
+    let end_time = params
+        .get("end_time")
+        .and_then(|v| v.as_i64())
+        .ok_or_else(|| anyhow!("End time required"))?;
+
+    let mut request = json!({
+        "queryString": query_string,
+        "startTime": start_time,
+        "endTime": end_time
+    });
+
+    if !has_source {
+        request["logGroupNames"] = json!(log_group_names);
+    }
+
+    let response = clients
+        .http
+        .json_request("logs", "StartQuery", &request.to_string())
+        .await?;
+
+    let json: Value = serde_json::from_str(&response)?;
+
+    Ok(json)
+}
+
+// CloudWatch Logs Insights - get_query_results
+("cloudwatchlogs", "get_query_results") => {
+    let query_id = params
+        .get("query_id")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    if query_id.is_empty() {
+        return Err(anyhow!("Query ID required"));
+    }
+
+    let request = json!({
+        "queryId": query_id
+    });
+
+    let response = clients
+        .http
+        .json_request("logs", "GetQueryResults", &request.to_string())
+        .await?;
+
+    let json: Value = serde_json::from_str(&response)?;
+
+    Ok(json)
+}
+
+
+// CloudWatch Logs Insights - get_query_results
+//
+//
         _ => Err(anyhow!(
             "Operation not handled: service='{}', method='{}'. Configure it in the resource JSON.",
             service,

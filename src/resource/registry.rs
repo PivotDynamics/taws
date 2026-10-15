@@ -74,6 +74,8 @@ const RESOURCE_FILES: &[&str] = &[
     include_str!("../resources/security-group.json"),
     include_str!("../resources/security-group-ingress.json"),
     include_str!("../resources/security-group-egress.json"),
+    include_str!("../resources/opensearch.json"),
+
 ];
 
 /// Color definition from JSON

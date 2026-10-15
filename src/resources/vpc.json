@@ -57,7 +57,16 @@
         { "header": "AZ", "json_path": "AvailabilityZone", "width": 14 },
         { "header": "AVAILABLE IPs", "json_path": "AvailableIpAddressCount", "width": 14 }
       ],
-      "sub_resources": [],
+      "sub_resources": [
+{
+  "shortcut": "r",
+  "display_name": "Routes",
+  "resource_key": "routes",
+  "parent_id_field": "SubnetId",
+  "filter_param": "association.subnet-id",
+  "filter_type": "ec2_filter"
+}
+      ],
       "actions": [],
       "api_config": {
         "protocol": "query",

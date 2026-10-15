@@ -54,7 +54,8 @@
         "action": "DescribeRouteTables",
         "response_root": "/DescribeRouteTablesResponse/routeTableSet/item/routeSet/item",
         "param_mapping": {
-          "route-table-id": "routeTableId"
+          "route-table-id": "routeTableId",
+          "subnet-id": "association.subnetId"
         }
       },
 

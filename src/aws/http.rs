@@ -87,6 +87,14 @@ pub enum Protocol {
 /// Service definitions for all 30 supported services
 pub fn get_service(name: &str) -> Option<ServiceDefinition> {
     match name {
+        "opensearch" => Some(ServiceDefinition {
+            signing_name: "es",
+            endpoint_prefix: "es",
+            api_version: "2021-01-01",
+            protocol: Protocol::RestJson,
+            target_prefix: None,
+            is_global: false,
+        }),
         "transfer" => Some(ServiceDefinition {
             signing_name: "transfer",
             endpoint_prefix: "transfer",

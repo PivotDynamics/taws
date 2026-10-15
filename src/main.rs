@@ -1437,7 +1437,10 @@ where
         }
 
         // Poll for new log events if in log tail mode
-        if app.mode == Mode::LogTail {
+        /*if app.mode == Mode::LogTail {
+            event::poll_logs_if_tailing(app).await;
+        }*/
+        if matches!(app.mode, Mode::LogTail | Mode::LogQueryTail) {
             event::poll_logs_if_tailing(app).await;
         }
 

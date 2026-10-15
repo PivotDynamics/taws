@@ -31,6 +31,7 @@ async fn handle_key_event(app: &mut App, key: KeyEvent) -> Result<bool> {
         Mode::SsoLogin => handle_sso_login_mode(app, key).await,
         Mode::ConsoleLogin => handle_console_login_mode(app, key).await,
         Mode::LogTail => handle_log_tail_mode(app, key).await,
+        Mode::LogQueryTail => handle_log_query_tail_mode(app, key).await,
     }
 }
 
@@ -243,6 +244,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
                                             app.enter_log_tail_mode().await?;
                                             handled = true;
                                         // Special handling for SSM connect
+                                        } else if action.sdk_method == "tail_log_query" {
+                                           app.enter_log_query_tail_mode().await?;
+                                           handled = true;
                                         } else if action.sdk_method == "ssm_connect" {
                                             app.request_ssm_connect();
                                             handled = true;
@@ -1106,6 +1110,52 @@ pub async fn poll_sso_if_waiting(app: &mut App) {
     }
 }
 
+async fn handle_log_query_tail_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
+    match key.code {
+        // Exit log query tail mode
+        KeyCode::Esc | KeyCode::Char('q') => {
+            app.exit_log_query_tail_mode();
+        }
+        // Scroll up
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.log_query_tail_scroll_up(1);
+        }
+        // Scroll down
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.log_query_tail_scroll_down(1);
+        }
+        // Page up
+        KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            app.log_query_tail_scroll_up(10);
+        }
+        // Page down
+        KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            app.log_query_tail_scroll_down(10);
+        }
+        // Go to top
+        KeyCode::Char('g') | KeyCode::Home => {
+            app.log_query_tail_scroll_to_top();
+        }
+        // Go to bottom (and enable auto-scroll)
+        KeyCode::Char('G') | KeyCode::End => {
+            app.log_query_tail_scroll_to_bottom();
+        }
+        KeyCode::PageUp => {
+            app.log_tail_scroll_up(10);
+        }
+        KeyCode::PageDown => {
+            app.log_tail_scroll_down(10);
+        }
+        // Toggle pause
+        KeyCode::Char(' ') => {
+            app.toggle_log_query_tail_pause();
+        }
+        _ => {}
+    }
+
+    Ok(false)
+}
+
 async fn handle_log_tail_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
     match key.code {
         // Exit log tail mode
@@ -1136,6 +1186,12 @@ async fn handle_log_tail_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
         KeyCode::Char('G') | KeyCode::End => {
             app.log_tail_scroll_to_bottom();
         }
+        KeyCode::PageUp => {
+            app.log_tail_scroll_up(10);
+        }
+        KeyCode::PageDown => {
+            app.log_tail_scroll_down(10);
+        }
         // Toggle pause
         KeyCode::Char(' ') => {
             app.toggle_log_tail_pause();
@@ -1146,7 +1202,7 @@ async fn handle_log_tail_mode(app: &mut App, key: KeyEvent) -> Result<bool> {
 }
 
 /// Poll for new log events if in log tail mode
-pub async fn poll_logs_if_tailing(app: &mut App) {
+/*pub async fn poll_logs_if_tailing(app: &mut App) {
     if app.mode != Mode::LogTail {
         return;
     }
@@ -1159,5 +1215,46 @@ pub async fn poll_logs_if_tailing(app: &mut App) {
 
     if should_poll {
         let _ = app.poll_log_events().await;
+    }
+}*/
+
+
+pub async fn poll_logs_if_tailing(app: &mut App) {
+    tracing::debug!("poll_logs_if_tailing: mode={:?}", app.mode);
+
+    match app.mode {
+        Mode::LogTail => {
+            let should_poll = if let Some(ref state) = app.log_tail_state {
+                !state.paused && state.last_poll.elapsed() >= Duration::from_secs(2)
+            } else {
+                false
+            };
+
+            if should_poll {
+                tracing::debug!("poll_logs_if_tailing: polling log stream");
+                let _ = app.poll_log_events().await;
+            }
+        }
+
+        Mode::LogQueryTail => {
+            let should_poll = if let Some(ref state) = app.log_query_tail_state {
+               tracing::debug!(
+                    "poll_logs_if_tailing: query state: paused={}, query_id={:?}, elapsed={:?}",
+                    state.paused,
+                    state.query_id,
+                    state.last_poll.elapsed()
+                );
+                !state.paused && state.last_poll.elapsed() >= Duration::from_secs(2)
+            } else {
+                false
+            };
+
+            if should_poll {
+                tracing::debug!("poll_logs_if_tailing: polling log query");
+                let _ = app.poll_log_query().await;
+            }
+        }
+
+        _ => {}
     }
 }

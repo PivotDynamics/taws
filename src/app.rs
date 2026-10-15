@@ -25,6 +25,8 @@ pub enum Mode {
     SsoLogin,     // SSO login dialog (IAM Identity Center)
     ConsoleLogin, // Console login dialog (aws login)
     LogTail,      // Tailing CloudWatch logs
+    LogQueryTail,
+ 
 }
 
 /// Pending action that requires confirmation
@@ -202,6 +204,7 @@ pub struct App {
 
     // Log tail state
     pub log_tail_state: Option<LogTailState>,
+    pub log_query_tail_state: Option<LogQueryTailState>,
 
     // SSM connect request (instance_id, region, profile)
     pub ssm_connect_request: Option<SsmConnectRequest>,
@@ -336,6 +339,42 @@ pub struct LogTailState {
     pub error: Option<String>,
 }
 
+pub struct LogQueryTailState {
+    /// Saved query name
+    pub query_name: String,
+
+    /// Logs Insights query string
+    pub query_string: String,
+
+    /// Log groups queried by the saved query
+    pub log_groups: Vec<String>,
+
+    /// Currently running Logs Insights query ID
+    pub query_id: Option<String>,
+
+    /// Collected query results
+    pub results: Vec<LogQueryResult>,
+
+    /// Scroll position in the query view
+    pub scroll: usize,
+
+    /// Whether to auto-scroll to bottom on new results
+    pub auto_scroll: bool,
+
+    /// Whether polling is paused
+    pub paused: bool,
+
+    /// Last time we polled for results
+    pub last_poll: std::time::Instant,
+
+    /// Error message if polling failed
+    pub error: Option<String>,
+}
+
+pub struct LogQueryResult {
+    pub fields: Vec<(String, String)>,
+}
+
 impl App {
     /// Create App from pre-initialized components (used with splash screen)
     #[allow(clippy::too_many_arguments)]
@@ -398,6 +437,7 @@ impl App {
             console_login_rx: None,
             pagination: PaginationState::default(),
             log_tail_state: None,
+            log_query_tail_state: None,
             ssm_connect_request: None,
             fuzzy_matcher: SkimMatcherV2::default().ignore_case(),
         }
@@ -1916,8 +1956,89 @@ impl App {
     // Log Tail Mode
     // =========================================================================
 
+    pub async fn enter_log_query_tail_mode(&mut self) -> Result<()> {
+        // Get the selected log stream item
+        let Some(item) = self.selected_item().cloned() else {
+            return Ok(());
+        };
+
+        let query_name = extract_json_value(&item, "Name");
+        let query_string = extract_json_value(&item, "QueryString");
+        // Extract log stream name from selected item
+        //let log_stream = extract_json_value(&item, "logStreamName");
+
+        // Extract log group name from parent context (log group)
+        /*let log_group = self
+            .parent_context
+            .as_ref()
+            .map(|ctx| extract_json_value(&ctx.item, "logGroupName"))
+            .unwrap_or_else(|| "-".to_string());*/
+
+         let log_groups = item
+            .get("LogGroupNamesRaw")
+            //.get("LogGroupNames")
+            .and_then(|v| v.as_array())
+            .map(|groups| {
+                groups
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
+        /*if log_group == "-" || log_stream == "-" {
+            self.error_message = Some("Could not get log group/stream name".to_string());
+            return Ok(());
+        }*/
+        if query_name == "-" || query_string == "-" {
+          self.error_message = Some("Could not get saved query definition".to_string());
+          return Ok(());
+        }
+ 
+        if log_groups.is_empty() {
+          self.error_message = Some("Saved query has no log groups".to_string());
+          return Ok(());
+        }
+
+        // Initialize log tail state
+/*        self.log_query_tail_state = Some(LogQueryTailState {
+            log_group: log_group.clone(),
+            log_stream: log_stream.clone(),
+            events: Vec::new(),
+            scroll: 0,
+            next_forward_token: None,
+            auto_scroll: true,
+            paused: false,
+            last_poll: std::time::Instant::now(),
+            error: None,
+        });*/
+        self.log_query_tail_state = Some(LogQueryTailState {
+          query_name,
+          query_string,
+          log_groups,
+          query_id: None,
+          results: Vec::new(),
+          scroll: 0,
+          auto_scroll: true,
+          paused: false,
+          last_poll: std::time::Instant::now(),
+          error: None,
+      });
+
+        //self.mode = Mode::LogTail;
+        self.mode = Mode::LogQueryTail;
+
+        // Fetch initial log events
+        //self.poll_log_events().await?;
+        self.poll_log_query().await?;
+
+        Ok(())
+    }
+
+
+
     /// Enter log tail mode for the selected log stream
-    pub async fn enter_log_tail_mode(&mut self) -> Result<()> {
+/*    pub async fn enter_log_tail_mode(&mut self) -> Result<()> {
         // Get the selected log stream item
         let Some(item) = self.selected_item().cloned() else {
             return Ok(());
@@ -1957,7 +2078,349 @@ impl App {
         self.poll_log_events().await?;
 
         Ok(())
+    }*/
+
+pub async fn enter_log_tail_mode(&mut self) -> Result<()> {
+    let Some(item) = self.selected_item().cloned() else {
+        return Ok(());
+    };
+
+    let (log_group, log_stream) =
+        if self.current_resource_key == "transfer-family-sftp-servers" {
+            let server_id = extract_json_value(&item, "ServerId");
+
+            if server_id == "-" || server_id.is_empty() {
+                self.error_message = Some("Could not get Transfer server ID".to_string());
+                return Ok(());
+            }
+
+            let details = crate::resource::describe_resource(
+                &self.current_resource_key,
+                &self.clients,
+                &server_id,
+                &item,
+            )
+            .await?;
+
+            let log_group_arn = details
+                .get("StructuredLogDestinations")
+                .and_then(|v| v.as_array())
+                .and_then(|v| v.first())
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+
+            if log_group_arn.is_empty() {
+                self.error_message =
+                    Some("Transfer server has no CloudWatch log destination".to_string());
+                return Ok(());
+            }
+
+            let log_group = log_group_arn
+                .strip_prefix("arn:aws:logs:")
+                .and_then(|v| v.split_once(":log-group:"))
+                .map(|(_, v)| v.trim_end_matches(":*"))
+                .unwrap_or("");
+
+            if log_group.is_empty() {
+                self.error_message =
+                    Some("Could not extract CloudWatch log group from ARN".to_string());
+                return Ok(());
+            }
+
+            let params = serde_json::json!({
+                "log_group_name": log_group,
+            });
+
+            let streams = crate::resource::invoke_sdk(
+                "cloudwatchlogs",
+                "describe_log_streams",
+                &self.clients,
+                &params,
+            )
+            .await?;
+
+            /*let log_stream = streams
+                .get("log_streams")
+                .and_then(|v| v.as_array())
+                .and_then(|v| v.first())
+                .and_then(|v| v.get("logStreamName"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");*/
+            let log_stream = streams
+    .get("logStreams")
+    .and_then(|v| v.as_array())
+    .and_then(|v| v.first())
+    .and_then(|v| v.get("logStreamName"))
+    .and_then(|v| v.as_str())
+    .unwrap_or("");
+
+            if log_stream.is_empty() {
+                self.error_message =
+                    Some("No log streams found for Transfer server".to_string());
+                return Ok(());
+            }
+
+            (log_group.to_string(), log_stream.to_string())
+        } else {
+            let log_stream = extract_json_value(&item, "logStreamName");
+
+            let log_group = self
+                .parent_context
+                .as_ref()
+                .map(|ctx| extract_json_value(&ctx.item, "logGroupName"))
+                .unwrap_or_else(|| "-".to_string());
+
+            if log_group == "-" || log_stream == "-" {
+                self.error_message =
+                    Some("Could not get log group/stream name".to_string());
+                return Ok(());
+            }
+
+            (log_group, log_stream)
+        };
+
+    self.log_tail_state = Some(LogTailState {
+        log_group,
+        log_stream,
+        events: Vec::new(),
+        scroll: 0,
+        next_forward_token: None,
+        auto_scroll: true,
+        paused: false,
+        last_poll: std::time::Instant::now(),
+        error: None,
+    });
+
+    self.mode = Mode::LogTail;
+
+    self.poll_log_events().await?;
+
+    Ok(())
+}
+
+
+pub async fn poll_log_query(&mut self) -> Result<()> {
+    let Some(ref mut state) = self.log_query_tail_state else {
+        return Ok(());
+    };
+
+    if state.paused {
+        return Ok(());
     }
+
+    // No active query: start a new Logs Insights query.
+    if state.query_id.is_none() {
+        tracing::debug!("poll_log_query: no active query, starting new query");
+
+        let now = chrono::Utc::now().timestamp_millis();
+        let start_time = now - (15 * 60 * 1000);
+        let mut query_string = state.query_string.trim().to_string();
+
+        if query_string.starts_with("SOURCE ") {
+            if let Some(pipe_pos) = query_string.find('|') {
+                query_string = query_string[pipe_pos + 1..]
+                    .trim_start()
+                    .to_string();
+            }
+        }
+
+        let params = serde_json::json!({
+            "log_group_names": state.log_groups,
+            "query_string": query_string,
+            //"query_string": state.query_string,
+            "start_time": start_time / 1000,
+            "end_time": now / 1000,
+        });
+        tracing::debug!( "poll_log_query: log_groups={:?}", state.log_groups );
+        tracing::debug!( "poll_log_query: query_string={:?}", query_string ); 
+        tracing::debug!( "poll_log_query: start_time={}, end_time={}", start_time / 1000, now / 1000 );
+
+        match crate::resource::invoke_sdk(
+            "cloudwatchlogs",
+            "start_query",
+            &self.clients,
+            &params,
+        )
+        .await
+        {
+            Ok(response) => {
+                tracing::debug!(
+    "poll_log_query: query_name={:?}",
+    state.query_name
+);
+
+tracing::debug!(
+    "poll_log_query: log_groups={:?}",
+    state.log_groups
+);
+
+tracing::debug!(
+    "poll_log_query: query_string={:?}",
+    state.query_string
+);
+
+tracing::debug!(
+    "poll_log_query: start_time={}, end_time={}",
+    start_time / 1000,
+    now / 1000
+);
+                tracing::debug!(
+                    "poll_log_query: StartQuery response: {}",
+                    serde_json::to_string_pretty(&response)
+                        .unwrap_or_else(|_| response.to_string())
+                );
+
+                state.error = None;
+
+                if let Some(query_id) =
+                    response.get("queryId").and_then(|v| v.as_str())
+                {
+                    tracing::debug!(
+                        "poll_log_query: StartQuery returned query_id={}",
+                        query_id
+                    );
+
+                    state.query_id = Some(query_id.to_string());
+                } else {
+                    state.error =
+                        Some("StartQuery returned no queryId".to_string());
+                }
+            }
+
+            Err(e) => {
+                state.error =
+                    Some(format!("Failed to start log query: {}", e));
+            }
+        }
+
+        state.last_poll = std::time::Instant::now();
+        return Ok(());
+    }
+
+    // Active query: retrieve its results.
+    let Some(query_id) = state.query_id.clone() else {
+        return Ok(());
+    };
+
+    tracing::debug!(
+        "poll_log_query: calling GetQueryResults query_id={}",
+        query_id
+    );
+
+    let params = serde_json::json!({
+        "query_id": query_id,
+    });
+
+    match crate::resource::invoke_sdk(
+        "cloudwatchlogs",
+        "get_query_results",
+        &self.clients,
+        &params,
+    )
+    .await
+    {
+        Ok(response) => {
+            tracing::debug!(
+                "poll_log_query: GetQueryResults response: {}",
+                serde_json::to_string_pretty(&response)
+                    .unwrap_or_else(|_| response.to_string())
+            );
+
+            state.error = None;
+
+            let status = response
+                .get("status")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown");
+
+            tracing::debug!(
+                "poll_log_query: query status={}",
+                status
+            );
+
+            match status {
+                "Complete" => {
+                    state.results.clear();
+
+                    if let Some(results) =
+                        response.get("results").and_then(|v| v.as_array())
+                    {
+                        for result in results {
+                            let fields = result
+                                .as_array()
+                                .map(|fields| {
+                                    fields
+                                        .iter()
+                                        .filter_map(|field| {
+                                            let name = field
+                                                .get("field")
+                                                .and_then(|v| v.as_str())?;
+
+                                            let value = field
+                                                .get("value")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or("");
+
+                                            Some((
+                                                name.to_string(),
+                                                value.to_string(),
+                                            ))
+                                        })
+                                        .collect::<Vec<_>>()
+                                })
+                                .unwrap_or_default();
+
+                            state.results.push(LogQueryResult { fields });
+                        }
+                    }
+
+                    tracing::debug!(
+                        "poll_log_query: query complete, {} results",
+                        state.results.len()
+                    );
+
+                    state.query_id = None;
+
+                    if state.auto_scroll && !state.results.is_empty() {
+                        state.scroll =
+                            state.results.len().saturating_sub(1);
+                    }
+                }
+
+                "Running" | "Scheduled" => {
+                    tracing::debug!(
+                        "poll_log_query: query still {}",
+                        status
+                    );
+                }
+
+                "Unknown" => {
+                    tracing::debug!(
+                        "poll_log_query: query returned unknown status"
+                    );
+                }
+
+                _ => {
+                    state.error = Some(format!(
+                        "Logs Insights query finished with status: {}",
+                        status
+                    ));
+
+                    state.query_id = None;
+                }
+            }
+        }
+
+        Err(e) => {
+            state.error =
+                Some(format!("Failed to fetch log query results: {}", e));
+        }
+    }
+
+    state.last_poll = std::time::Instant::now();
+
+    Ok(())
+}
 
     /// Poll for new log events
     pub async fn poll_log_events(&mut self) -> Result<()> {
@@ -2080,6 +2543,51 @@ impl App {
         self.log_tail_state = None;
         self.mode = Mode::Normal;
     }
+    /////////////////////////
+    pub fn toggle_log_query_tail_pause(&mut self) {
+        if let Some(ref mut state) = self.log_query_tail_state {
+            state.paused = !state.paused;
+        }
+    }
+
+    /// Scroll log tail view up
+    pub fn log_query_tail_scroll_up(&mut self, amount: usize) {
+        if let Some(ref mut state) = self.log_query_tail_state {
+            state.scroll = state.scroll.saturating_sub(amount);
+            state.auto_scroll = false;
+        }
+    }
+
+    /// Scroll log tail view down
+    pub fn log_query_tail_scroll_down(&mut self, amount: usize) {
+        if let Some(ref mut state) = self.log_query_tail_state {
+            let max_scroll = state.results.len().saturating_sub(1);
+            state.scroll = (state.scroll + amount).min(max_scroll);
+        }
+    }
+
+    /// Scroll log tail view to top
+    pub fn log_query_tail_scroll_to_top(&mut self) {
+        if let Some(ref mut state) = self.log_query_tail_state {
+            state.scroll = 0;
+            state.auto_scroll = false;
+        }
+    }
+
+    /// Scroll log tail view to bottom and enable auto-scroll
+    pub fn log_query_tail_scroll_to_bottom(&mut self) {
+        if let Some(ref mut state) = self.log_query_tail_state {
+            state.scroll = state.results.len().saturating_sub(1);
+            state.auto_scroll = true;
+        }
+    }
+
+    /// Exit log tail mode
+    pub fn exit_log_query_tail_mode(&mut self) {
+        self.log_query_tail_state = None;
+        self.mode = Mode::Normal;
+    }
+
 
     // =========================================================================
     // SSM Connect

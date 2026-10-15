@@ -47,6 +47,9 @@ pub fn render(f: &mut Frame, app: &App) {
         Mode::LogTail => {
             render_log_tail_view(f, app, chunks[1]);
         }
+        Mode::LogQueryTail => {
+            render_log_query_tail_view(f, app, chunks[1]);
+        }
         _ => {
             render_main_content(f, app, chunks[1]);
         }
@@ -589,7 +592,8 @@ fn highlight_json_line_with_search(
     Line::from(spans)
 }
 
-fn render_log_tail_view(f: &mut Frame, app: &App, area: Rect) {
+
+/*fn render_log_query_tail_view(f: &mut Frame, app: &App, area: Rect) {
     let Some(ref state) = app.log_tail_state else {
         let msg = Paragraph::new("No log tail state").style(Style::default().fg(Color::Red));
         f.render_widget(msg, area);
@@ -683,6 +687,446 @@ fn render_log_tail_view(f: &mut Frame, app: &App, area: Rect) {
             .position(scroll)
             .viewport_content_length(visible_lines);
         f.render_stateful_widget(scrollbar, inner_area, &mut scrollbar_state);
+    }
+}*/
+
+/*
+fn render_log_query_tail_view(f: &mut Frame, app: &App, area: Rect) {
+    let Some(ref state) = app.log_query_tail_state else {
+        let msg = Paragraph::new("No log query tail state")
+            .style(Style::default().fg(Color::Red));
+        f.render_widget(msg, area);
+        return;
+    };
+
+    let status = if state.paused {
+        "PAUSED"
+    } else if state.query_id.is_some() {
+        "RUNNING"
+    } else {
+        "LIVE"
+    };
+
+    let status_color = if state.paused {
+        Color::Yellow
+    } else if state.query_id.is_some() {
+        Color::Cyan
+    } else {
+        Color::Green
+    };
+
+    let title = format!(" {} | {} ", state.query_name, status);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    if state.results.is_empty() {
+        let msg = if let Some(ref err) = state.error {
+            Paragraph::new(format!("Error: {}", err))
+                .style(Style::default().fg(Color::Red))
+        } else if state.query_id.is_some() {
+            Paragraph::new("Waiting for query results...")
+                .style(Style::default().fg(Color::DarkGray))
+        } else {
+            Paragraph::new("No results")
+                .style(Style::default().fg(Color::DarkGray))
+        };
+
+        f.render_widget(msg, inner_area);
+        return;
+    }
+
+    let lines: Vec<Line> = state
+        .results
+        .iter()
+        .map(|result| {
+            let text = result
+                .fields
+                .iter()
+                .map(|(field, value)| format!("{}={}", field, value))
+                .collect::<Vec<_>>()
+                .join(" | ");
+
+            Line::from(Span::styled(
+                text,
+                Style::default().fg(Color::White),
+            ))
+        })
+        .collect();
+
+    let total_lines = lines.len();
+    let visible_lines = inner_area.height as usize;
+    let max_scroll = total_lines.saturating_sub(visible_lines);
+    let scroll = state.scroll.min(max_scroll);
+
+    let paragraph = Paragraph::new(lines).scroll((scroll as u16, 0));
+    f.render_widget(paragraph, inner_area);
+
+    if total_lines > visible_lines {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        let mut scrollbar_state = ScrollbarState::new(total_lines)
+            .position(scroll)
+            .viewport_content_length(visible_lines);
+
+        f.render_stateful_widget(
+            scrollbar,
+            inner_area,
+            &mut scrollbar_state,
+        );
+    }
+}
+*/
+
+fn render_log_query_tail_view(f: &mut Frame, app: &App, area: Rect) {
+    let Some(ref state) = app.log_query_tail_state else {
+        let msg = Paragraph::new("No log query tail state")
+            .style(Style::default().fg(Color::Red));
+        f.render_widget(msg, area);
+        return;
+    };
+
+    let status = if state.paused {
+        "PAUSED"
+    } else if state.query_id.is_some() {
+        "RUNNING"
+    } else {
+        "LIVE"
+    };
+
+    let status_color = if state.paused {
+        Color::Yellow
+    } else if state.query_id.is_some() {
+        Color::Cyan
+    } else {
+        Color::Green
+    };
+
+    let title = format!(" {} | {} ", state.query_name, status);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    if state.results.is_empty() {
+        let msg = if let Some(ref err) = state.error {
+            Paragraph::new(format!("Error: {}", err))
+                .style(Style::default().fg(Color::Red))
+        } else if state.query_id.is_some() {
+            Paragraph::new("Waiting for query results...")
+                .style(Style::default().fg(Color::DarkGray))
+        } else {
+            Paragraph::new("No results")
+                .style(Style::default().fg(Color::DarkGray))
+        };
+
+        f.render_widget(msg, inner_area);
+        return;
+    }
+
+    let lines: Vec<Line> = state
+        .results
+        .iter()
+        .map(|result| {
+            let text = result
+                .fields
+                .iter()
+                .map(|(field, value)| format!("{}={}", field, value))
+                .collect::<Vec<_>>()
+                .join(" | ");
+
+            Line::from(Span::styled(
+                text,
+                Style::default().fg(Color::White),
+            ))
+        })
+        .collect();
+
+    // Calculate the number of terminal lines after wrapping.
+    let available_width = inner_area.width as usize;
+
+    let total_lines: usize = lines
+        .iter()
+        .map(|line| {
+            let width = line.width();
+
+            if available_width == 0 {
+                1
+            } else {
+                width.max(1).div_ceil(available_width)
+            }
+        })
+        .sum();
+
+    let visible_lines = inner_area.height as usize;
+
+    let max_scroll = total_lines.saturating_sub(visible_lines);
+    let scroll = state.scroll.min(max_scroll);
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((scroll as u16, 0));
+
+    f.render_widget(paragraph, inner_area);
+
+    if total_lines > visible_lines {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        let mut scrollbar_state = ScrollbarState::new(total_lines)
+            .position(scroll)
+            .viewport_content_length(visible_lines);
+
+        f.render_stateful_widget(
+            scrollbar,
+            inner_area,
+            &mut scrollbar_state,
+        );
+    }
+}
+
+
+
+/*fn render_log_tail_view(f: &mut Frame, app: &App, area: Rect) {
+    let Some(ref state) = app.log_tail_state else {
+        let msg = Paragraph::new("No log tail state").style(Style::default().fg(Color::Red));
+        f.render_widget(msg, area);
+        return;
+    };
+
+    // Build title with stream info and status
+    let status = if state.paused { "PAUSED" } else { "LIVE" };
+    let status_color = if state.paused {
+        Color::Yellow
+    } else {
+        Color::Green
+    };
+    let title = format!(" {} | {} ", state.log_stream, status);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    if state.events.is_empty() {
+        let msg = if let Some(ref err) = state.error {
+            Paragraph::new(format!("Error: {}", err)).style(Style::default().fg(Color::Red))
+        } else {
+            Paragraph::new("Waiting for log events...").style(Style::default().fg(Color::DarkGray))
+        };
+        f.render_widget(msg, inner_area);
+        return;
+    }
+
+    // Build lines from log events with syntax highlighting
+    let lines: Vec<Line> = state
+        .events
+        .iter()
+        .map(|event| {
+            let timestamp = crate::resource::format_log_timestamp(event.timestamp);
+            let message = &event.message;
+
+            // Determine color based on log level keywords
+            let msg_style = if message.contains("ERROR")
+                || message.contains("error")
+                || message.contains("Error")
+            {
+                Style::default().fg(Color::Red)
+            } else if message.contains("WARN")
+                || message.contains("warn")
+                || message.contains("Warning")
+            {
+                Style::default().fg(Color::Yellow)
+            } else if message.contains("INFO") || message.contains("info") {
+                Style::default().fg(Color::Green)
+            } else if message.contains("DEBUG") || message.contains("debug") {
+                Style::default().fg(Color::Blue)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            Line::from(vec![
+                Span::styled(
+                    format!("[{}] ", timestamp),
+                    Style::default().fg(Color::DarkGray),
+                ),
+                Span::styled(message.trim_end().to_string(), msg_style),
+            ])
+        })
+        .collect();
+
+    let total_lines = lines.len();
+    let visible_lines = inner_area.height as usize;
+    let max_scroll = total_lines.saturating_sub(visible_lines);
+    let scroll = state.scroll.min(max_scroll);
+
+    let paragraph = Paragraph::new(lines.clone()).scroll((scroll as u16, 0));
+    f.render_widget(paragraph, inner_area);
+
+    // Render scrollbar if content exceeds visible area
+    if total_lines > visible_lines {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+        // content_length = total_lines, position = scroll, viewport = visible_lines
+        let mut scrollbar_state = ScrollbarState::new(total_lines)
+            .position(scroll)
+            .viewport_content_length(visible_lines);
+        f.render_stateful_widget(scrollbar, inner_area, &mut scrollbar_state);
+    }
+}*/
+
+fn render_log_tail_view(f: &mut Frame, app: &App, area: Rect) {
+    let Some(ref state) = app.log_tail_state else {
+        let msg = Paragraph::new("No log tail state")
+            .style(Style::default().fg(Color::Red));
+        f.render_widget(msg, area);
+        return;
+    };
+
+    let status = if state.paused { "PAUSED" } else { "LIVE" };
+
+    let status_color = if state.paused {
+        Color::Yellow
+    } else {
+        Color::Green
+    };
+
+    let title = format!(" {} | {} ", state.log_stream, status);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    if state.events.is_empty() {
+        let msg = if let Some(ref err) = state.error {
+            Paragraph::new(format!("Error: {}", err))
+                .style(Style::default().fg(Color::Red))
+        } else {
+            Paragraph::new("Waiting for log events...")
+                .style(Style::default().fg(Color::DarkGray))
+        };
+
+        f.render_widget(msg, inner_area);
+        return;
+    }
+
+    // Build lines from log events with syntax highlighting.
+    let lines: Vec<Line> = state
+        .events
+        .iter()
+        .map(|event| {
+            let timestamp = crate::resource::format_log_timestamp(event.timestamp);
+            let message = &event.message;
+
+            let msg_style = if message.contains("ERROR")
+                || message.contains("error")
+                || message.contains("Error")
+            {
+                Style::default().fg(Color::Red)
+            } else if message.contains("WARN")
+                || message.contains("warn")
+                || message.contains("Warning")
+            {
+                Style::default().fg(Color::Yellow)
+            } else if message.contains("INFO") || message.contains("info") {
+                Style::default().fg(Color::Green)
+            } else if message.contains("DEBUG") || message.contains("debug") {
+                Style::default().fg(Color::Blue)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            Line::from(vec![
+                Span::styled(
+                    format!("[{}] ", timestamp),
+                    Style::default().fg(Color::DarkGray),
+                ),
+                Span::styled(message.trim_end().to_string(), msg_style),
+            ])
+        })
+        .collect();
+
+    // Calculate the number of terminal lines after wrapping.
+    let available_width = inner_area.width as usize;
+
+    let total_lines: usize = lines
+        .iter()
+        .map(|line| {
+            let width = line.width();
+
+            if available_width == 0 {
+                1
+            } else {
+                width.max(1).div_ceil(available_width)
+            }
+        })
+        .sum();
+
+    let visible_lines = inner_area.height as usize;
+
+    let max_scroll = total_lines.saturating_sub(visible_lines);
+    let scroll = state.scroll.min(max_scroll);
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((scroll as u16, 0));
+
+    f.render_widget(paragraph, inner_area);
+
+    if total_lines > visible_lines {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        let mut scrollbar_state = ScrollbarState::new(total_lines)
+            .position(scroll)
+            .viewport_content_length(visible_lines);
+
+        f.render_stateful_widget(
+            scrollbar,
+            inner_area,
+            &mut scrollbar_state,
+        );
     }
 }
 

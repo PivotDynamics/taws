@@ -57,7 +57,12 @@
         "filter_param": "ServerId",
         "filter_type": "json_param"
       }],
-      "actions": [],
+      "actions": [{
+        "key": "t",
+        "display_name": "Tail Logs",
+        "shortcut": "t",
+        "sdk_method": "tail_logs"
+      }],
 
       "api_config": {
         "protocol": "json",
@@ -101,6 +106,10 @@
         "EndpointDetails": {
           "source": "/EndpointDetails",
           "default": "-"
+        },
+        "StructuredLogDestinations": {
+          "source": "/StructuredLogDestinations",
+          "default": []
         }
       },
 

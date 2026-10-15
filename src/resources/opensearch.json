@@ -1,0 +1,176 @@
+{
+  "resources": {
+    "opensearch-domains": {
+      "display_name": "OpenSearch Domains",
+      "service": "opensearch",
+      "sdk_method": "list_domain_names",
+      "sdk_method_params": {},
+      "response_path": "DomainNames",
+      "id_field": "DomainName",
+      "name_field": "DomainName",
+      "is_global": false,
+      "columns": [
+        {
+          "header": "DOMAIN NAME",
+          "json_path": "DomainName",
+          "width": 35
+        },
+        {
+          "header": "ENGINE",
+          "json_path": "EngineType",
+          "width": 15
+        }
+      ],
+      "sub_resources": [
+        {
+          "shortcut": "g",
+          "display_name": "Domain Details",
+          "resource_key": "opensearch-domain",
+          "parent_id_field": "DomainName",
+          "filter_param": "domain-name",
+          "filter_type": "string"
+        }
+      ],
+      "actions": [],
+      "api_config": {
+        "protocol": "rest-json",
+        "method": "GET",
+        "path": "/2021-01-01/domain",
+        "response_root": "/DomainNames"
+      },
+      "field_mappings": {
+        "DomainName": {
+          "source": "/DomainName",
+          "default": "-"
+        },
+        "EngineType": {
+          "source": "/EngineType",
+          "default": "-"
+        }
+      },
+      "action_configs": {}
+    },
+
+    "opensearch-domain": {
+      "display_name": "OpenSearch Domain",
+      "visible_resource": false,
+      "service": "opensearch",
+      "sdk_method": "describe_domain",
+      "sdk_method_params": {},
+      "response_path": "DomainStatus",
+      "id_field": "DomainName",
+      "name_field": "DomainName",
+      "is_global": false,
+      "columns": [{
+        "header": "DOMAIN",
+        "json_path": "DomainName",
+        "width": 30
+      },
+      {
+        "header": "PROCESSING",
+        "json_path": "DomainProcessingStatus",
+        "width": 18
+      },
+      {
+        "header": "CHANGE STATUS",
+        "json_path": "ConfigChangeStatus",
+        "width": 18
+      },
+      {
+        "header": "ENGINE",
+        "json_path": "EngineMode",
+        "width": 14
+      },
+      {
+        "header": "VERSION",
+        "json_path": "EngineVersion",
+        "width": 20
+      },
+      {
+        "header": "ENDPOINT",
+        "json_path": "Endpoint",
+        "width": 60
+      },
+      {
+        "header": "INSTANCES",
+        "json_path": "InstanceCount",
+        "width": 10
+      },
+      {
+        "header": "INSTANCE TYPE",
+        "json_path": "InstanceType",
+        "width": 25
+      },
+      {
+        "header": "VOLUME GB",
+        "json_path": "VolumeSize",
+        "width": 12
+      },
+      {
+        "header": "VOLUME TYPE",
+        "json_path": "VolumeType",
+        "width": 14
+      },
+      {
+        "header": "AZs",
+        "json_path": "AvailabilityZoneCount",
+        "width": 8
+      }],
+      "sub_resources": [],
+      "actions": [],
+      "api_config": {
+        "protocol": "rest-json",
+        "method": "GET",
+        "path": "/2021-01-01/opensearch/domain/{domain-name}",
+        "response_root": "/DomainStatus"
+      },
+      "field_mappings": {
+        "DomainName": {
+          "source": "/DomainName",
+          "default": "-"
+        },
+        "DomainProcessingStatus": {
+          "source": "/DomainProcessingStatus",
+          "default": "-"
+        },
+        "ConfigChangeStatus": {
+          "source": "/ChangeProgressDetails/ConfigChangeStatus",
+          "default": "-"
+        },
+        "EngineMode": {
+          "source": "/EngineMode",
+          "default": "-"
+        },
+        "EngineVersion": {
+          "source": "/EngineVersion",
+          "default": "-"
+        },
+        "Endpoint": {
+          "source": "/Endpoints/vpc",
+          "default": "-"
+        },
+        "InstanceCount": {
+          "source": "/ClusterConfig/InstanceCount",
+          "default": "-"
+        },
+        "InstanceType": {
+          "source": "/ClusterConfig/InstanceType",
+          "default": "-"
+        },
+        "VolumeSize": {
+          "source": "/EBSOptions/VolumeSize",
+          "default": "-"
+        },
+        "VolumeType": {
+          "source": "/EBSOptions/VolumeType",
+          "default": "-"
+        },
+        "AvailabilityZoneCount": {
+          "source": "/ClusterConfig/ZoneAwarenessConfig/AvailabilityZoneCount",
+          "default": "-"
+        }
+      },
+      "action_configs": {}
+    }
+  }
+}
